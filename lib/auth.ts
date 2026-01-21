@@ -158,6 +158,10 @@ export async function signUp(
      RETURNING id`,
     [tenantName, slug]
   )
+  
+  if (!tenantResult || tenantResult.length === 0) {
+    throw new Error("Failed to create tenant")
+  }
   const tenantId = tenantResult[0].id
 
   // Create user
@@ -167,6 +171,10 @@ export async function signUp(
      RETURNING id, tenant_id, email, name, role, avatar_url`,
     [tenantId, email, hashedPassword, name]
   )
+  
+  if (!userResult || userResult.length === 0) {
+    throw new Error("Failed to create user")
+  }
   const user = userResult[0]
 
   const token = await createToken(user.id)
