@@ -103,8 +103,30 @@ export async function signUp(
   name: string,
   tenantName: string
 ): Promise<{ user: User; token: string }> {
+  // Check if user already exists
+  const existingUser = await queryOne<{ id: string }>(
+    `SELECT id FROM users WHERE email = $1`,
+    [email]
+  )
+  if (existingUser) {
+    throw new Error("An account with this email already exists")
+  }
+
   const hashedPassword = await hashPassword(password)
-  const slug = tenantName.toLowerCase().replace(/\s+/g, "-")
+  const baseSlug = tenantName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+  
+  // Generate unique slug
+  let slug = baseSlug
+  let counter = 0
+  while (true) {
+    const existingTenant = await queryOne<{ id: string }>(
+      `SELECT id FROM tenants WHERE slug = $1`,
+      [slug]
+    )
+    if (!existingTenant) break
+    counter++
+    slug = `${baseSlug}-${counter}`
+  }
 
   // Create tenant
   const tenantResult = await query<{ id: string }>(
