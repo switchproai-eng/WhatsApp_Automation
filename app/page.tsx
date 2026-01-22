@@ -263,14 +263,15 @@ export default function LandingPage() {
       </section>
 
       {/* Why SwitchPro Section */}
-      <section className="py-16 border-y border-gray-200 bg-white">
+      <section className="relative z-10 py-20 md:py-24 border-y border-white/10 bg-white/5 backdrop-blur">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Why SwitchPro WhatsApp Chat Agent
             </h2>
+            <p className="text-lg text-white/80 max-w-2xl mx-auto">Transform your customer engagement with cutting-edge AI technology</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
             {[
               {
                 icon: Globe,
@@ -295,12 +296,12 @@ export default function LandingPage() {
             ].map((item, index) => {
               const Icon = item.icon;
               return (
-                <div key={index} className="text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100 mx-auto mb-4">
-                    <Icon className="h-6 w-6 text-indigo-600" />
+                <div key={index} className="group text-center p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 mx-auto mb-5 group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all duration-300">
+                    <Icon className="h-7 w-7 text-purple-300" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
-                  <p className="text-gray-600 text-sm">{item.description}</p>
+                  <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
+                  <p className="text-white/70 text-sm">{item.description}</p>
                 </div>
               );
             })}
@@ -309,29 +310,29 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 md:py-32 bg-gray-50">
+      <section id="features" className="relative z-10 py-20 md:py-32">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Core Features
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg text-white/80 max-w-2xl mx-auto">
               Everything you need to automate WhatsApp conversations, capture leads, and convert customers.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <div
                   key={index}
-                  className="p-6 rounded-xl bg-white border border-gray-200 hover:border-indigo-300 transition-colors shadow-sm"
+                  className="group p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl shadow-lg"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100 mb-4">
-                    <Icon className="h-6 w-6 text-indigo-600" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all duration-300 mb-5">
+                    <Icon className="h-7 w-7 text-purple-300" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                  <p className="text-gray-600">{feature.description}</p>
+                  <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
+                  <p className="text-white/70 leading-relaxed">{feature.description}</p>
                 </div>
               );
             })}
@@ -340,27 +341,27 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 md:py-32 bg-white">
+      <section id="how-it-works" className="relative z-10 py-20 md:py-32 border-y border-white/10 bg-white/5 backdrop-blur">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               How It Works
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg text-white/80 max-w-2xl mx-auto">
               Three simple steps to transform your WhatsApp into a lead generation and conversion machine.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {steps.map((step, index) => (
-              <div key={index} className="relative">
-                <div className="text-center">
-                  <div className="text-6xl font-bold text-indigo-200 mb-4">{step.number}</div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{step.title}</h3>
-                  <p className="text-gray-600">{step.description}</p>
+              <div key={index} className="relative group">
+                <div className="text-center p-8 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-y-2">
+                  <div className="text-6xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">{step.number}</div>
+                  <h3 className="text-xl font-semibold text-white mb-3">{step.title}</h3>
+                  <p className="text-white/70">{step.description}</p>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-12 right-0 translate-x-1/2 w-8">
-                    <ArrowRight className="h-6 w-6 text-gray-300" />
+                  <div className="hidden md:block absolute top-16 right-0 translate-x-1/2 group-hover:translate-x-1/3 transition-transform duration-300">
+                    <ArrowRight className="h-8 w-8 text-purple-400/50" />
                   </div>
                 )}
               </div>
