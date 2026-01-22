@@ -178,49 +178,42 @@ const steps = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 animate-gradient overflow-x-hidden">
-      {/* Animated Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-10 -left-10 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-slow"></div>
-        <div className="absolute top-40 -right-10 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float delay-100"></div>
-        <div className="absolute -bottom-10 left-24 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-slower delay-200"></div>
-      </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100">
       {/* Header */}
-      <header className="relative z-50 border-b border-white/10 bg-white/5 backdrop-blur-2xl supports-[backdrop-filter]:bg-white/5 sticky top-0">
+      <header className="border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50">
         <div className="container mx-auto px-4">
           <div className="flex h-20 items-center justify-between">
             <div className="flex items-center gap-2">
               <Image
                 src="/images/Frame 1.png"
-                alt="Company Logo"
+                alt="WhatsFlow Logo"
                 width={1400}
                 height={700}
-                className="h-20 w-auto object-contain transform hover:scale-105 transition-transform duration-300"
+                className="h-20 w-auto object-contain"
               />
             </div>
             <nav className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-sm text-white/80 hover:text-white transition-all duration-300 font-medium hover:-translate-y-0.5 inline-block">
+              <a href="#features" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">
                 Features
               </a>
-              <a href="#how-it-works" className="text-sm text-white/80 hover:text-white transition-all duration-300 font-medium hover:-translate-y-0.5 inline-block">
+              <a href="#how-it-works" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">
                 How It Works
               </a>
-              <a href="#use-cases" className="text-sm text-white/80 hover:text-white transition-all duration-300 font-medium hover:-translate-y-0.5 inline-block">
+              <a href="#use-cases" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">
                 Use Cases
               </a>
-              <a href="#faq" className="text-sm text-white/80 hover:text-white transition-all duration-300 font-medium hover:-translate-y-0.5 inline-block">
+              <a href="#faq" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">
                 FAQ
               </a>
             </nav>
             <div className="flex items-center gap-4">
               <Link href="/login">
-                <Button variant="ghost" className="text-white hover:text-white/90 bg-white/10 hover:bg-white/20 border border-white/20 transition-all duration-300">
+                <Button variant="ghost" className="text-gray-700 hover:text-gray-900">
                   Log in
                 </Button>
               </Link>
               <Link href="/signup">
-                <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:-translate-y-0.5">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                   Get Started
                 </Button>
               </Link>
@@ -230,46 +223,57 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative z-10 py-20 md:py-32">
+      <section className="py-20 md:py-32">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur border border-white/20 mb-6 md:mb-8 animate-pulse">
-              <MessageSquare className="h-4 w-4 text-purple-300" />
-              <span className="text-sm text-white/90 font-medium">
-                WhatsApp Customer Service AI
-              </span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 md:mb-8 text-balance leading-tight">
-              AI-Powered WhatsApp Conversations That <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Convert Leads Into Customers</span>
-            </h1>
-            <p className="text-lg md:text-xl text-white/80 mb-8 md:mb-12 max-w-3xl mx-auto text-pretty">
-              SwitchPro WhatsApp Chat Agent enables businesses to automate customer conversations,
-              run Meta ad campaigns, capture leads, and convert them into paying customers using
-              AI-powered WhatsApp automation. Manage the full customer journey from ad click to WhatsApp conversation to conversion.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/signup">
-                <Button size="lg" className="text-lg px-8 h-14 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-xl hover:shadow-purple-500/30 transition-all duration-300 group">
-                  Get Started
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="max-w-3xl">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 mb-6">
+                <MessageSquare className="h-4 w-4 text-blue-600" />
+                <span className="text-sm text-blue-600 font-medium">
+                  WhatsApp Business API Partner
+                </span>
+              </div>
+              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                AI-Powered WhatsApp Conversations That <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Convert Leads Into Customers</span>
+              </h1>
+              <p className="text-lg md:text-xl text-gray-600 mb-8">
+                SwitchPro WhatsApp Chat Agent enables businesses to automate customer conversations,
+                run Meta ad campaigns, capture leads, and convert them into paying customers using
+                AI-powered WhatsApp automation. Manage the full customer journey from ad click to WhatsApp conversation to conversion.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/signup">
+                  <Button size="lg" className="text-lg px-8 h-14 bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300">
+                    Get Started
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <Button size="lg" variant="outline" className="text-lg px-8 h-14 border-gray-300 text-gray-700 hover:bg-gray-50 transition-all duration-300">
+                  Watch Demo
                 </Button>
-              </Link>
-              <Button size="lg" variant="outline" className="text-lg px-8 h-14 border-white/30 text-white hover:bg-white/10 bg-white/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5">
-                Book a Demo
-              </Button>
+              </div>
+            </div>
+            <div className="relative">
+              <Image
+                src="/images/hero-dashboard.png"
+                alt="WhatsApp Business Dashboard"
+                width={600}
+                height={400}
+                className="w-full h-auto rounded-2xl shadow-2xl"
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Why SwitchPro Section */}
-      <section className="relative z-10 py-20 md:py-24 border-y border-white/10 bg-white/5 backdrop-blur">
+      {/* Features Section - Benefits */}
+      <section id="benefits" className="py-20 md:py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 md:mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Why SwitchPro WhatsApp Chat Agent
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Why Choose SwitchPro
             </h2>
-            <p className="text-lg text-white/80 max-w-2xl mx-auto">Transform your customer engagement with cutting-edge AI technology</p>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">Transform your customer engagement with cutting-edge AI technology</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
             {[
@@ -296,12 +300,12 @@ export default function LandingPage() {
             ].map((item, index) => {
               const Icon = item.icon;
               return (
-                <div key={index} className="group text-center p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 mx-auto mb-5 group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all duration-300">
-                    <Icon className="h-7 w-7 text-purple-300" />
+                <div key={index} className="group text-center p-6 rounded-2xl bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:-translate-y-2 hover:shadow-lg">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 mx-auto mb-5">
+                    <Icon className="h-7 w-7 text-blue-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
-                  <p className="text-white/70 text-sm">{item.description}</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
+                  <p className="text-gray-600 text-sm">{item.description}</p>
                 </div>
               );
             })}
@@ -310,13 +314,13 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="relative z-10 py-20 md:py-32">
+      <section id="features" className="py-20 md:py-32 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Core Features
             </h2>
-            <p className="text-lg text-white/80 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Everything you need to automate WhatsApp conversations, capture leads, and convert customers.
             </p>
           </div>
@@ -326,13 +330,13 @@ export default function LandingPage() {
               return (
                 <div
                   key={index}
-                  className="group p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl shadow-lg"
+                  className="group p-6 rounded-2xl bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:-translate-y-2 hover:shadow-lg"
                 >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all duration-300 mb-5">
-                    <Icon className="h-7 w-7 text-purple-300" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 mb-5">
+                    <Icon className="h-7 w-7 text-blue-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
-                  <p className="text-white/70 leading-relaxed">{feature.description}</p>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                  <p className="text-gray-600 leading-relaxed">{feature.description}</p>
                 </div>
               );
             })}

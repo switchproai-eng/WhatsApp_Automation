@@ -30,16 +30,16 @@ const statusColors: Record<string, string> = {
 export function RecentConversations({ conversations }: RecentConversationsProps) {
   if (conversations.length === 0) {
     return (
-      <Card className="bg-card/60 backdrop-blur border-border hover:shadow-lg transition-all duration-300">
+      <Card className="bg-white border-gray-200 hover:shadow-lg transition-all duration-300">
         <CardHeader>
-          <CardTitle className="text-base">Recent Conversations</CardTitle>
+          <CardTitle className="text-base text-gray-900">Recent Conversations</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-3">
-              <MessageSquare className="w-6 h-6 text-muted-foreground" />
+            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+              <MessageSquare className="w-6 h-6 text-gray-400" />
             </div>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-gray-600 mb-4">
               No conversations yet. Start by connecting your WhatsApp Business account.
             </p>
             <Button asChild>
@@ -52,11 +52,11 @@ export function RecentConversations({ conversations }: RecentConversationsProps)
   }
 
   return (
-    <Card className="bg-card/60 backdrop-blur border-border hover:shadow-lg transition-all duration-300">
+    <Card className="bg-white border-gray-200 hover:shadow-lg transition-all duration-300">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <CardTitle className="text-base">Recent Conversations</CardTitle>
+        <CardTitle className="text-base text-gray-900">Recent Conversations</CardTitle>
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard/inbox" className="text-primary">
+          <Link href="/dashboard/inbox" className="text-blue-600">
             View all
             <ArrowRight className="w-4 h-4 ml-1" />
           </Link>

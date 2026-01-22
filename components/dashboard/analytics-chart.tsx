@@ -44,35 +44,35 @@ export function AnalyticsChart({ tenantId }: AnalyticsChartProps) {
   void tenantId
 
   return (
-    <Card className="bg-card/60 backdrop-blur border-border hover:shadow-lg transition-all duration-300">
+    <Card className="bg-white border-gray-200 hover:shadow-lg transition-all duration-300">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Message Activity (Last 7 Days)</CardTitle>
+        <CardTitle className="text-base text-gray-900">Message Activity (Last 7 Days)</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis
                 dataKey="date"
-                stroke="hsl(var(--muted-foreground))"
+                stroke="#6b7280"
                 fontSize={12}
                 tickLine={false}
               />
               <YAxis
-                stroke="hsl(var(--muted-foreground))"
+                stroke="#6b7280"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e5e7eb",
                   borderRadius: "8px",
-                  color: "hsl(var(--foreground))",
+                  color: "#111827",
                 }}
-                labelStyle={{ color: "hsl(var(--foreground))" }}
+                labelStyle={{ color: "#111827" }}
               />
               <Legend />
               <Line
