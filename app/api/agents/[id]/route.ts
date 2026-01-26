@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const agent = await queryOne<any>(`
       SELECT id, name, config, is_default, created_at, updated_at
-      FROM ai_agents
+      FROM ai_assistants
       WHERE id = $1 AND tenant_id = $2
     `, [id, session.tenantId]);
 
@@ -39,13 +39,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { name, config = {}, is_default = false } = await request.json();
 
     await query<any>(`
-      UPDATE ai_agents SET name = $1, config = $2::jsonb, is_default = $3
+      UPDATE ai_assistants SET name = $1, config = $2::jsonb, is_default = $3
       WHERE id = $4 AND tenant_id = $5
     `, [name, config, is_default, id, session.tenantId]);
 
     if (is_default) {
       await query<any>(`
-        UPDATE ai_agents SET is_default = false WHERE tenant_id = $1 AND id != $2
+        UPDATE ai_assistants SET is_default = false WHERE tenant_id = $1 AND id != $2
       `, [session.tenantId, id]);
       await query<any>(`
         UPDATE tenants SET default_agent_id = $1 WHERE id = $2
@@ -54,7 +54,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const agent = await queryOne<any>(`
       SELECT id, name, config, is_default, created_at, updated_at
-      FROM ai_agents
+      FROM ai_assistants
       WHERE id = $1 AND tenant_id = $2
     `, [id, session.tenantId]);
 
@@ -75,7 +75,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     // Get the agent to check if it's the default
     const agentToDelete = await queryOne<any>(`
-      SELECT id, is_default FROM ai_agents WHERE id = $1 AND tenant_id = $2
+      SELECT id, is_default FROM ai_assistants WHERE id = $1 AND tenant_id = $2
     `, [id, session.tenantId]);
 
     if (!agentToDelete) {
@@ -83,20 +83,20 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     await query(`
-      DELETE FROM ai_agents WHERE id = $1 AND tenant_id = $2
+      DELETE FROM ai_assistants WHERE id = $1 AND tenant_id = $2
     `, [id, session.tenantId]);
 
     // If the deleted agent was the default agent, update tenant's default_agent_id
     if (agentToDelete.is_default) {
       // Try to set another agent as default if available
       const otherAgent = await queryOne<any>(`
-        SELECT id FROM ai_agents WHERE tenant_id = $1 LIMIT 1
+        SELECT id FROM ai_assistants WHERE tenant_id = $1 LIMIT 1
       `, [session.tenantId]);
 
       if (otherAgent) {
         // Set another agent as default
         await query(`
-          UPDATE ai_agents SET is_default = true WHERE id = $1
+          UPDATE ai_assistants SET is_default = true WHERE id = $1
         `, [otherAgent.id]);
 
         // Update tenant's default_agent_id

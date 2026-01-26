@@ -16,6 +16,7 @@ import { EscalationRules } from "@/components/agent/escalation-rules";
 import { CampaignRules } from "@/components/agent/campaign-rules";
 import { KnowledgeBase } from "@/components/agent/knowledge-base";
 import { ResponseTemplates } from "@/components/agent/response-templates";
+import { ResponseSettings } from "@/components/agent/response-settings";
 
 interface AgentConfig {
   id: string;
@@ -126,7 +127,7 @@ export default function AgentEditorPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           <TabsTrigger value="profile">
             <Bot className="mr-2 h-4 w-4" />
             Agent Profile
@@ -134,6 +135,10 @@ export default function AgentEditorPage() {
           <TabsTrigger value="prompt">
             <MessageSquare className="mr-2 h-4 w-4" />
             AI Prompt
+          </TabsTrigger>
+          <TabsTrigger value="responses">
+            <MessageSquare className="mr-2 h-4 w-4" />
+            Response Settings
           </TabsTrigger>
           <TabsTrigger value="knowledge">
             <BookOpen className="mr-2 h-4 w-4" />
@@ -211,6 +216,13 @@ export default function AgentEditorPage() {
             agentId={agent.id}
             initialConfig={agent.config.templates || {}}
             onUpdate={(updatedConfig) => setAgent({...agent, config: {...agent.config, templates: updatedConfig}})}
+          />
+        </TabsContent>
+        <TabsContent value="responses" className="mt-6">
+          <ResponseSettings
+            agentId={agent.id}
+            initialConfig={agent.config.response || {}}
+            onUpdate={(updatedConfig) => setAgent({...agent, config: {...agent.config, response: updatedConfig}})}
           />
         </TabsContent>
       </Tabs>

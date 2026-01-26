@@ -163,13 +163,23 @@ export async function checkBusinessHours(
 export function shouldUseAIResponse(config: any): boolean {
   try {
     // Check if config exists
-    if (!config || !config.capabilities) {
+    if (!config) {
       return false;
     }
 
-    // Check if AI should auto-respond
-    const capabilities = config.capabilities;
-    return capabilities.autoRespond === true || capabilities.automated === true;
+    // First check response settings if available
+    if (config.response && typeof config.response.autoRespond !== 'undefined') {
+      return config.response.autoRespond === true;
+    }
+
+    // Then check capabilities if response settings not available
+    if (config.capabilities) {
+      const capabilities = config.capabilities;
+      return capabilities.autoRespond === true || capabilities.automated === true;
+    }
+
+    // Default to true if no specific settings found
+    return true;
   } catch (error) {
     console.error("Error checking AI capabilities:", error);
     return false;
