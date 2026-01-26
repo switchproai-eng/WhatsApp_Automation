@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sql } from "../../../../lib/db";
+import { query, queryOne } from "../../../../lib/db";
 import { generateAIResponse, shouldUseAIResponse, checkBusinessHours } from "../../../../lib/ai";
 import { WhatsAppService } from "../../../../lib/whatsapp";
 
@@ -101,12 +101,12 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
 
   try {
     // Find the WhatsApp account and tenant by phone number ID
-    const accountResult = await sql`
-      SELECT wa.id as whatsapp_account_id, wa.tenant_id, wa.access_token 
+    const accountResult = await query(`
+      SELECT wa.id as whatsapp_account_id, wa.tenant_id, wa.access_token
       FROM whatsapp_accounts wa
-      WHERE wa.phone_number_id = ${phoneNumberId}
+      WHERE wa.phone_number_id = $1
       LIMIT 1
-    `;
+    `, [phoneNumberId]);
 
     if (accountResult.length === 0) {
       console.log("No WhatsApp account found for phone number ID:", phoneNumberId);
@@ -119,52 +119,52 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
     const senderName = contact?.profile?.name || "Unknown";
 
     // Find or create contact
-    let contactResult = await sql`
-      SELECT id FROM contacts 
-      WHERE tenant_id = ${tenantId} AND phone = ${senderPhone}
+    let contactResult = await query(`
+      SELECT id FROM contacts
+      WHERE tenant_id = $1 AND phone = $2
       LIMIT 1
-    `;
+    `, [tenantId, senderPhone]);
 
     let contactId: string;
 
     if (contactResult.length === 0) {
       // Create new contact
-      const newContact = await sql`
+      const newContact = await query(`
         INSERT INTO contacts (tenant_id, phone, name, source)
-        VALUES (${tenantId}, ${senderPhone}, ${senderName}, 'whatsapp')
+        VALUES ($1, $2, $3, 'whatsapp')
         RETURNING id
-      `;
+      `, [tenantId, senderPhone, senderName]);
       contactId = newContact[0].id;
     } else {
       contactId = contactResult[0].id;
     }
 
     // Find or create conversation
-    let conversationResult = await sql`
-      SELECT id FROM conversations 
-      WHERE tenant_id = ${tenantId} AND contact_id = ${contactId}
+    let conversationResult = await query(`
+      SELECT id FROM conversations
+      WHERE tenant_id = $1 AND contact_id = $2
       ORDER BY created_at DESC
       LIMIT 1
-    `;
+    `, [tenantId, contactId]);
 
     let conversationId: string;
 
     if (conversationResult.length === 0) {
       // Create new conversation
-      const newConversation = await sql`
+      const newConversation = await query(`
         INSERT INTO conversations (tenant_id, contact_id, whatsapp_account_id, status)
-        VALUES (${tenantId}, ${contactId}, ${whatsappAccountId}, 'open')
+        VALUES ($1, $2, $3, 'open')
         RETURNING id
-      `;
+      `, [tenantId, contactId, whatsappAccountId]);
       conversationId = newConversation[0].id;
     } else {
       conversationId = conversationResult[0].id;
       // Reopen conversation if closed
-      await sql`
-        UPDATE conversations 
+      await query(`
+        UPDATE conversations
         SET status = 'open', updated_at = NOW()
-        WHERE id = ${conversationId}
-      `;
+        WHERE id = $1
+      `, [conversationId]);
     }
 
     // Determine message content based on type
@@ -212,70 +212,54 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
     }
 
     // Store message
-    await sql`
+    await query(`
       INSERT INTO messages (
-        conversation_id, 
-        direction, 
-        type, 
-        content, 
+        conversation_id,
+        direction,
+        type,
+        content,
         whatsapp_message_id,
         status,
         sent_at
       )
       VALUES (
-        ${conversationId}, 
-        'inbound', 
-        ${messageType}, 
-        ${content}, 
-        ${message.id},
-        'delivered',
-        to_timestamp(${parseInt(message.timestamp)})
+        $1, 'inbound', $2, $3, $4, 'delivered', to_timestamp($5)
       )
-    `;
+    `, [conversationId, messageType, content, message.id, parseInt(message.timestamp)]);
 
     // Update conversation last message
-    await sql`
-      UPDATE conversations 
-      SET 
-        last_message = ${content},
-        last_message_at = to_timestamp(${parseInt(message.timestamp)}),
+    await query(`
+      UPDATE conversations
+      SET
+        last_message = $1,
+        last_message_at = to_timestamp($2),
         unread_count = unread_count + 1,
         updated_at = NOW()
-      WHERE id = ${conversationId}
-    `;
+      WHERE id = $3
+    `, [content, parseInt(message.timestamp), conversationId]);
 
     // Update contact last contacted
-    await sql`
-      UPDATE contacts 
+    await query(`
+      UPDATE contacts
       SET last_contacted_at = NOW(), updated_at = NOW()
-      WHERE id = ${contactId}
-    `;
+      WHERE id = $1
+    `, [contactId]);
 
     console.log("Message stored successfully:", message.id);
 
     // Check if we should auto-respond with AI
     try {
-      // First, try to find an agent associated with this phone number
-      let agentResult = await sql`
+      // First, try to find an agent associated with this tenant
+      let agentResult = await query(`
         SELECT id, config FROM ai_agents
-        WHERE tenant_id = ${tenantId}
-        AND config->>'phoneNumber' = ${senderPhone}
+        WHERE tenant_id = $1 AND is_default = true
         LIMIT 1
-      `;
-
-      // If no agent found for this specific phone number, use the default agent
-      if (agentResult.length === 0) {
-        agentResult = await sql`
-          SELECT id, config FROM ai_agents
-          WHERE tenant_id = ${tenantId} AND is_default = true
-          LIMIT 1
-        `;
-      }
+      `, [tenantId]);
 
       const agentConfig = agentResult.length > 0 ? agentResult[0].config : null;
 
       // Check if AI auto-respond is enabled and within business hours
-      const isBusinessHours = await checkBusinessHours(tenantId);
+      const isBusinessHours = await checkBusinessHours(tenantId, agentConfig?.profile?.timezone);
       const shouldAutoRespond =
         shouldUseAIResponse(agentConfig) && isBusinessHours && message.type === "text" && content;
 
@@ -283,13 +267,13 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
         console.log("Generating AI response for:", content);
 
         // Get recent conversation history (last 5 messages)
-        const historyResult = await sql`
+        const historyResult = await query(`
           SELECT direction, content
           FROM messages
-          WHERE conversation_id = \$${conversationId}
+          WHERE conversation_id = $1
           ORDER BY sent_at DESC
           LIMIT 5
-        `;
+        `, [conversationId]);
 
         const conversationHistory = historyResult
           .reverse()
@@ -302,19 +286,12 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
         conversationHistory.push({ role: "user", content });
 
         // Generate AI response
-        const aiResponse = await generateAIResponse(content, conversationHistory, {
-          agentName: agentConfig?.profile?.name || "Assistant",
-          agentRole: agentConfig?.profile?.description || "Customer service representative",
-          businessDescription: agentConfig?.profile?.description,
-          tone: agentConfig?.profile?.tone || "professional",
-          language: agentConfig?.profile?.language || "en",
-          capabilities: agentConfig?.capabilities || {},
-        });
+        const aiResponse = await generateAIResponse(content, conversationHistory, agentConfig || {});
 
         // Send response via WhatsApp
         const whatsappService = new WhatsAppService({
           phoneNumberId,
-          accessToken: accountResult[0].access_token, // Fixed: use the access token from the DB
+          accessToken: accountResult[0].access_token,
         });
 
         await whatsappService.sendTextMessage({
@@ -323,7 +300,7 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
         });
 
         // Store the AI response in database
-        await sql`
+        await query(`
           INSERT INTO messages (
             conversation_id,
             direction,
@@ -334,25 +311,19 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
             sent_at
           )
           VALUES (
-            ${conversationId},
-            'outbound',
-            'text',
-            ${aiResponse},
-            'sent',
-            true,
-            NOW()
+            $1, 'outbound', 'text', $2, 'sent', true, NOW()
           )
-        `;
+        `, [conversationId, aiResponse]);
 
         // Update conversation with AI response
-        await sql`
+        await query(`
           UPDATE conversations
           SET
-            last_message = ${aiResponse},
+            last_message = $1,
             last_message_at = NOW(),
             updated_at = NOW()
-          WHERE id = ${conversationId}
-        `;
+          WHERE id = $2
+        `, [aiResponse, conversationId]);
 
         console.log("AI auto-response sent successfully");
       } else {
@@ -386,31 +357,31 @@ async function handleMessageStatus(status: {
 }) {
   try {
     if (status.status === "delivered") {
-      await sql`
+      await query(`
         UPDATE messages
         SET
-          status = ${status.status},
-          delivered_at = to_timestamp(${parseInt(status.timestamp)}),
+          status = $1,
+          delivered_at = to_timestamp($2),
           updated_at = NOW()
-        WHERE whatsapp_message_id = ${status.id}
-      `;
+        WHERE whatsapp_message_id = $3
+      `, [status.status, parseInt(status.timestamp), status.id]);
     } else if (status.status === "read") {
-      await sql`
+      await query(`
         UPDATE messages
         SET
-          status = ${status.status},
-          read_at = to_timestamp(${parseInt(status.timestamp)}),
+          status = $1,
+          read_at = to_timestamp($2),
           updated_at = NOW()
-        WHERE whatsapp_message_id = ${status.id}
-      `;
+        WHERE whatsapp_message_id = $3
+      `, [status.status, parseInt(status.timestamp), status.id]);
     } else {
-      await sql`
+      await query(`
         UPDATE messages
         SET
-          status = ${status.status},
+          status = $1,
           updated_at = NOW()
-        WHERE whatsapp_message_id = ${status.id}
-      `;
+        WHERE whatsapp_message_id = $2
+      `, [status.status, status.id]);
     }
 
     console.log("Message status updated:", status.id, status.status);
