@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { 
-  MessageSquare, 
-  Phone, 
-  Key, 
-  CheckCircle2, 
+import { toast } from "sonner";
+import {
+  MessageSquare,
+  Phone,
+  Key,
+  CheckCircle2,
   AlertCircle,
   ExternalLink,
   RefreshCw,
@@ -22,30 +23,118 @@ import {
 
 export function WhatsAppSettings() {
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
   const [connected, setConnected] = useState(false);
   const [settings, setSettings] = useState({
+    phoneNumber: "",
     phoneNumberId: "",
-    businessAccountId: "",
+    wabaId: "",
     accessToken: "",
     webhookVerifyToken: "",
+    displayName: "",
     autoReply: true,
     businessHoursOnly: false,
     readReceipts: true,
   });
 
+  // Load existing settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/settings/whatsapp');
+        const data = await response.json();
+
+        if (data.connected && data.config) {
+          setConnected(true);
+          setSettings(prev => ({
+            ...prev,
+            phoneNumber: data.config.phoneNumber || "",
+            phoneNumberId: data.config.phoneNumberId || "",
+            wabaId: data.config.wabaId || "",
+            displayName: data.config.displayName || "",
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading WhatsApp settings:', error);
+        toast.error('Failed to load WhatsApp settings');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
   const handleSave = async () => {
     setSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setConnected(true);
-    setSaving(false);
+
+    try {
+      const response = await fetch('/api/settings/whatsapp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber: settings.phoneNumber,
+          phoneNumberId: settings.phoneNumberId,
+          wabaId: settings.wabaId,
+          accessToken: settings.accessToken,
+          webhookVerifyToken: settings.webhookVerifyToken,
+          displayName: settings.displayName,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setConnected(true);
+        toast.success('WhatsApp settings saved successfully!');
+      } else {
+        toast.error(data.error || 'Failed to save WhatsApp settings');
+      }
+    } catch (error) {
+      console.error('Error saving WhatsApp settings:', error);
+      toast.error('Failed to save WhatsApp settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleTestConnection = async () => {
+    if (!settings.phoneNumberId || !settings.accessToken) {
+      toast.error('Phone Number ID and Access Token are required to test connection');
+      return;
+    }
+
     setTesting(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setTesting(false);
-    setConnected(true);
+
+    try {
+      // Test the WhatsApp API by making a simple request
+      const whatsappService = await import('@/lib/whatsapp');
+      const service = new whatsappService.WhatsAppService({
+        phoneNumberId: settings.phoneNumberId,
+        accessToken: settings.accessToken,
+      });
+
+      // Try to get the phone number info to test the connection
+      const response = await fetch(
+        `https://graph.facebook.com/v18.0/${settings.phoneNumberId}?access_token=${settings.accessToken}`
+      );
+
+      if (response.ok) {
+        toast.success('WhatsApp connection test successful!');
+        setConnected(true);
+      } else {
+        const errorData = await response.json();
+        toast.error(`WhatsApp connection test failed: ${errorData.error?.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error testing WhatsApp connection:', error);
+      toast.error('Failed to test WhatsApp connection');
+    } finally {
+      setTesting(false);
+    }
   };
 
   return (
@@ -96,6 +185,16 @@ export function WhatsAppSettings() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
+              <Label htmlFor="phoneNumber">Display Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                placeholder="Enter your WhatsApp number (e.g., +1234567890)"
+                value={settings.phoneNumber}
+                onChange={(e) => setSettings({ ...settings, phoneNumber: e.target.value })}
+                className="bg-secondary border-border"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
               <Label htmlFor="phoneNumberId">Phone Number ID</Label>
               <Input
                 id="phoneNumberId"
@@ -105,13 +204,26 @@ export function WhatsAppSettings() {
                 className="bg-secondary border-border"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="businessAccountId">Business Account ID</Label>
+              <Label htmlFor="wabaId">WABA ID</Label>
               <Input
-                id="businessAccountId"
-                placeholder="Enter your Business Account ID"
-                value={settings.businessAccountId}
-                onChange={(e) => setSettings({ ...settings, businessAccountId: e.target.value })}
+                id="wabaId"
+                placeholder="Enter your WhatsApp Business Account ID"
+                value={settings.wabaId}
+                onChange={(e) => setSettings({ ...settings, wabaId: e.target.value })}
+                className="bg-secondary border-border"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="displayName">Display Name</Label>
+              <Input
+                id="displayName"
+                placeholder="Enter your WhatsApp display name"
+                value={settings.displayName}
+                onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
                 className="bg-secondary border-border"
               />
             </div>
@@ -127,6 +239,9 @@ export function WhatsAppSettings() {
               onChange={(e) => setSettings({ ...settings, accessToken: e.target.value })}
               className="bg-secondary border-border"
             />
+            <p className="text-xs text-muted-foreground">
+              This token is stored securely and used to authenticate API requests
+            </p>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -246,6 +361,7 @@ export function WhatsAppSettings() {
                 className="border-border bg-transparent"
                 onClick={() => {
                   navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/whatsapp`);
+                  toast.success('Webhook URL copied to clipboard!');
                 }}
               >
                 Copy
@@ -259,7 +375,7 @@ export function WhatsAppSettings() {
       </Card>
 
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving || loading}>
           {saving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
