@@ -18,15 +18,34 @@ export async function query<T>(
   params: unknown[] = []
 ): Promise<T[]> {
   const sql = getSql();
-  const result = await sql(queryText, params)
-  // Handle different response formats from Neon
-  if (Array.isArray(result)) {
-    return result as T[]
+
+  // For Neon serverless, we need to use tagged template literals
+  // We'll build a dynamic template string with the parameters
+  if (params.length === 0) {
+    // If no parameters, we can use the tagged template directly
+    const result = await sql.unsafe(queryText);
+
+    // Handle different response formats from Neon
+    if (Array.isArray(result)) {
+      return result as T[]
+    }
+    if (result && typeof result === 'object' && 'rows' in result) {
+      return (result as { rows: T[] }).rows
+    }
+    return []
+  } else {
+    // For parameterized queries, we need to use the unsafe method
+    const result = await sql.unsafe(queryText, params);
+
+    // Handle different response formats from Neon
+    if (Array.isArray(result)) {
+      return result as T[]
+    }
+    if (result && typeof result === 'object' && 'rows' in result) {
+      return (result as { rows: T[] }).rows
+    }
+    return []
   }
-  if (result && typeof result === 'object' && 'rows' in result) {
-    return (result as { rows: T[] }).rows
-  }
-  return []
 }
 
 export async function queryOne<T>(
