@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
 import { Bot, Save, Globe, Clock, Building2 } from "lucide-react"
 
 const industries = [
@@ -63,16 +64,49 @@ export function AgentProfile() {
     timezone: "UTC",
     workDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
   })
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Load saved profile data when component mounts
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const response = await fetch("/api/agent/config")
+        if (response.ok) {
+          const data = await response.json()
+          if (data.config?.profile) {
+            setProfile(data.config.profile)
+          }
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadProfile()
+  }, [])
   const [isSaving, setIsSaving] = useState(false)
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      await fetch("/api/agent/config", {
+      const response = await fetch("/api/agent/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ section: "profile", data: profile }),
       })
+
+      if (response.ok) {
+        toast.success("Profile saved successfully!")
+      } else {
+        const errorText = await response.text();
+        console.error("Failed to save profile:", errorText);
+        toast.error("Failed to save profile. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast.error("An error occurred while saving the profile.");
     } finally {
       setIsSaving(false)
     }
@@ -113,7 +147,7 @@ export function AgentProfile() {
                 placeholder="e.g., Emma, Alex, Support Bot"
                 value={profile.name}
                 onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-gray-900 bg-white"
               />
               <p className="text-xs text-gray-500">
                 This name will be used when the agent introduces itself
@@ -126,8 +160,8 @@ export function AgentProfile() {
                 value={profile.industry}
                 onValueChange={(value) => setProfile({ ...profile, industry: value })}
               >
-                <SelectTrigger id="industry" className="border-gray-300">
-                  <SelectValue placeholder="Select industry" />
+                <SelectTrigger id="industry" className="border-gray-300 text-gray-900 bg-white">
+                  <SelectValue placeholder="Select industry" className="text-gray-900" />
                 </SelectTrigger>
                 <SelectContent>
                   {industries.map((industry) => (
@@ -148,7 +182,7 @@ export function AgentProfile() {
               value={profile.description}
               onChange={(e) => setProfile({ ...profile, description: e.target.value })}
               rows={4}
-              className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-gray-900 bg-white"
             />
             <p className="text-xs text-gray-500">
               Help the AI understand your business context for better responses
@@ -210,8 +244,8 @@ export function AgentProfile() {
               value={profile.language}
               onValueChange={(value) => setProfile({ ...profile, language: value })}
             >
-              <SelectTrigger id="language" className="w-full md:w-64 border-gray-300">
-                <SelectValue />
+              <SelectTrigger id="language" className="w-full md:w-64 border-gray-300 text-gray-900 bg-white">
+                <SelectValue className="text-gray-900" />
               </SelectTrigger>
               <SelectContent>
                 {languages.map((lang) => (
@@ -249,7 +283,7 @@ export function AgentProfile() {
                 type="time"
                 value={profile.businessHoursStart}
                 onChange={(e) => setProfile({ ...profile, businessHoursStart: e.target.value })}
-                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-gray-900 bg-white"
               />
             </div>
             <div className="space-y-2">
@@ -258,7 +292,7 @@ export function AgentProfile() {
                 type="time"
                 value={profile.businessHoursEnd}
                 onChange={(e) => setProfile({ ...profile, businessHoursEnd: e.target.value })}
-                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-gray-900 bg-white"
               />
             </div>
             <div className="space-y-2">
@@ -267,8 +301,8 @@ export function AgentProfile() {
                 value={profile.timezone}
                 onValueChange={(value) => setProfile({ ...profile, timezone: value })}
               >
-                <SelectTrigger className="border-gray-300">
-                  <SelectValue />
+                <SelectTrigger className="border-gray-300 text-gray-900 bg-white">
+                  <SelectValue className="text-gray-900" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="UTC">UTC</SelectItem>
@@ -303,9 +337,9 @@ export function AgentProfile() {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+        <Button onClick={handleSave} disabled={isSaving || isLoading} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
           <Save className="w-4 h-4" />
-          {isSaving ? "Saving..." : "Save Profile"}
+          {(isSaving || isLoading) ? "Processing..." : "Save Profile"}
         </Button>
       </div>
     </div>

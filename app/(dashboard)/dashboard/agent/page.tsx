@@ -21,7 +21,11 @@ import {
   Sparkles,
 } from "lucide-react"
 
+import { redirect } from 'next/navigation';
+
 export default function AgentConfigPage() {
+  redirect('/dashboard/agents');
+}
   const [activeTab, setActiveTab] = useState("profile")
 
   const tabs = [

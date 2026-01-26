@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
-import { generateAIResponse, shouldUseAIResponse, checkBusinessHours } from "@/lib/ai";
-import { WhatsAppService } from "@/lib/whatsapp";
 
 // Verify webhook (GET request from Meta)
 export async function GET(request: NextRequest) {
@@ -102,7 +100,7 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
   try {
     // Find the WhatsApp account and tenant by phone number ID
     const accountResult = await sql`
-      SELECT wa.id as whatsapp_account_id, wa.tenant_id, wa.access_token 
+      SELECT wa.id as whatsapp_account_id, wa.tenant_id 
       FROM whatsapp_accounts wa
       WHERE wa.phone_number_id = ${phoneNumberId}
       LIMIT 1
@@ -253,112 +251,8 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
 
     console.log("Message stored successfully:", message.id);
 
-    // Check if we should auto-respond with AI
-    try {
-      // Get agent configuration
-      const configResult = await sql`
-        SELECT config FROM agent_configurations
-        WHERE tenant_id = \$${tenantId}
-        LIMIT 1
-      `;
-
-      const agentConfig = configResult.length > 0 ? configResult[0].config : null;
-
-      // Check if AI auto-respond is enabled and within business hours
-      const isBusinessHours = await checkBusinessHours(tenantId);
-      const shouldAutoRespond =
-        shouldUseAIResponse(agentConfig) && isBusinessHours && message.type === "text" && content;
-
-      if (shouldAutoRespond) {
-        console.log("Generating AI response for:", content);
-
-        // Get recent conversation history (last 5 messages)
-        const historyResult = await sql`
-          SELECT direction, content
-          FROM messages
-          WHERE conversation_id = \$${conversationId}
-          ORDER BY sent_at DESC
-          LIMIT 5
-        `;
-
-        const conversationHistory = historyResult
-          .reverse()
-          .map((msg: any) => ({
-            role: msg.direction === "outbound" ? "assistant" : "user",
-            content: msg.content,
-          }));
-
-        // Add current message
-        conversationHistory.push({ role: "user", content });
-
-        // Generate AI response
-        const aiResponse = await generateAIResponse(content, conversationHistory, {
-          agentName: agentConfig?.profile?.name || "Assistant",
-          agentRole: agentConfig?.profile?.description || "Customer service representative",
-          businessDescription: agentConfig?.profile?.description,
-          tone: agentConfig?.profile?.tone || "professional",
-          language: agentConfig?.profile?.language || "en",
-        });
-
-        // Send response via WhatsApp
-        const whatsappService = new WhatsAppService({
-          phoneNumberId,
-          accessToken,
-        });
-
-        await whatsappService.sendTextMessage({
-          to: senderPhone,
-          text: aiResponse,
-        });
-
-        // Store the AI response in database
-        await sql`
-          INSERT INTO messages (
-            conversation_id,
-            direction,
-            type,
-            content,
-            status,
-            ai_generated,
-            sent_at
-          )
-          VALUES (
-            \$${conversationId},
-            'outbound',
-            'text',
-            \$${aiResponse},
-            'sent',
-            true,
-            NOW()
-          )
-        `;
-
-        // Update conversation with AI response
-        await sql`
-          UPDATE conversations
-          SET
-            last_message = \$${aiResponse},
-            last_message_at = NOW(),
-            updated_at = NOW()
-          WHERE id = \$${conversationId}
-        `;
-
-        console.log("AI auto-response sent successfully");
-      } else {
-        console.log(
-          "AI auto-response skipped - Config:",
-          !!agentConfig,
-          "Business hours:",
-          isBusinessHours,
-          "Message type:",
-          message.type,
-          "Has content:",
-          !!content
-        );
-      }
-    } catch (aiError) {
-      console.error("Error in AI auto-response:", aiError);
-    }
+    // TODO: Trigger automation flows based on message content
+    // TODO: Check for AI auto-reply settings
 
   } catch (error) {
     console.error("Error handling incoming message:", error);

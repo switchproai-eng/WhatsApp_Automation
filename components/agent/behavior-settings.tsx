@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
+import { toast } from "sonner"
 import {
   MessageSquare,
   UserPlus,
@@ -31,15 +32,48 @@ export function BehaviorSettings() {
     enableQuickReplies: true,
   })
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Load saved behavior settings when component mounts
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch("/api/agent/config")
+        if (response.ok) {
+          const data = await response.json()
+          if (data.config?.behavior) {
+            setSettings(data.config.behavior)
+          }
+        }
+      } catch (error) {
+        console.error("Error loading behavior settings:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadSettings()
+  }, [])
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      await fetch("/api/agent/config", {
+      const response = await fetch("/api/agent/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ section: "behavior", data: settings }),
       })
+
+      if (response.ok) {
+        toast.success("Behavior settings saved successfully!")
+      } else {
+        const errorText = await response.text();
+        console.error("Failed to save behavior settings:", errorText);
+        toast.error("Failed to save behavior settings. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error saving behavior settings:", error);
+      toast.error("An error occurred while saving the behavior settings.");
     } finally {
       setIsSaving(false)
     }
@@ -54,27 +88,27 @@ export function BehaviorSettings() {
   return (
     <div className="space-y-6">
       {/* Core Behaviors */}
-      <Card className="bg-card border-border">
-        <CardHeader>
+      <Card className="bg-white border border-gray-200 shadow-sm">
+        <CardHeader className="bg-gray-50 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Zap className="w-5 h-5 text-primary" />
+            <div className="p-2 rounded-lg bg-blue-100">
+              <Zap className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <CardTitle>Core Behaviors</CardTitle>
-              <CardDescription>Configure fundamental AI agent behaviors</CardDescription>
+              <CardTitle className="text-gray-900">Core Behaviors</CardTitle>
+              <CardDescription className="text-gray-600">Configure fundamental AI agent behaviors</CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+        <CardContent className="space-y-4 p-6">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-chart-1/10">
-                <MessageSquare className="w-4 h-4 text-chart-1" />
+              <div className="p-2 rounded-lg bg-blue-100">
+                <MessageSquare className="w-4 h-4 text-blue-600" />
               </div>
               <div>
-                <p className="font-medium text-foreground">Enable Auto-Replies</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="font-medium text-gray-900">Enable Auto-Replies</p>
+                <p className="text-sm text-gray-600">
                   AI will automatically respond to incoming messages
                 </p>
               </div>
@@ -85,14 +119,14 @@ export function BehaviorSettings() {
             />
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-chart-2/10">
-                <UserPlus className="w-4 h-4 text-chart-2" />
+              <div className="p-2 rounded-lg bg-green-100">
+                <UserPlus className="w-4 h-4 text-green-600" />
               </div>
               <div>
-                <p className="font-medium text-foreground">Ask for Contact Details</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="font-medium text-gray-900">Ask for Contact Details</p>
+                <p className="text-sm text-gray-600">
                   Request name and email for lead capture
                 </p>
               </div>
@@ -103,14 +137,14 @@ export function BehaviorSettings() {
             />
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-chart-3/10">
-                <Calendar className="w-4 h-4 text-chart-3" />
+              <div className="p-2 rounded-lg bg-purple-100">
+                <Calendar className="w-4 h-4 text-purple-600" />
               </div>
               <div>
-                <p className="font-medium text-foreground">Enable Booking</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="font-medium text-gray-900">Enable Booking</p>
+                <p className="text-sm text-gray-600">
                   Allow customers to schedule appointments
                 </p>
               </div>
@@ -121,14 +155,14 @@ export function BehaviorSettings() {
             />
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-chart-4/10">
-                <CreditCard className="w-4 h-4 text-chart-4" />
+              <div className="p-2 rounded-lg bg-yellow-100">
+                <CreditCard className="w-4 h-4 text-yellow-600" />
               </div>
               <div>
-                <p className="font-medium text-foreground">Enable Payment Collection</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="font-medium text-gray-900">Enable Payment Collection</p>
+                <p className="text-sm text-gray-600">
                   Send payment links during conversations
                 </p>
               </div>
@@ -139,14 +173,14 @@ export function BehaviorSettings() {
             />
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-chart-5/10">
-                <Heart className="w-4 h-4 text-chart-5" />
+              <div className="p-2 rounded-lg bg-red-100">
+                <Heart className="w-4 h-4 text-red-600" />
               </div>
               <div>
-                <p className="font-medium text-foreground">Enable Sentiment Detection</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="font-medium text-gray-900">Enable Sentiment Detection</p>
+                <p className="text-sm text-gray-600">
                   Detect customer emotions and adapt responses
                 </p>
               </div>
@@ -160,23 +194,23 @@ export function BehaviorSettings() {
       </Card>
 
       {/* Response Settings */}
-      <Card className="bg-card border-border">
-        <CardHeader>
+      <Card className="bg-white border border-gray-200 shadow-sm">
+        <CardHeader className="bg-gray-50 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-chart-2/10">
-              <Timer className="w-5 h-5 text-chart-2" />
+            <div className="p-2 rounded-lg bg-green-100">
+              <Timer className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <CardTitle>Response Settings</CardTitle>
-              <CardDescription>Fine-tune how the AI responds</CardDescription>
+              <CardTitle className="text-gray-900">Response Settings</CardTitle>
+              <CardDescription className="text-gray-600">Fine-tune how the AI responds</CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 p-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label>Response Delay</Label>
-              <span className="text-sm text-muted-foreground">
+              <Label className="text-gray-700">Response Delay</Label>
+              <span className="text-sm text-gray-600">
                 {settings.responseDelay} second{settings.responseDelay !== 1 ? "s" : ""}
               </span>
             </div>
@@ -188,15 +222,15 @@ export function BehaviorSettings() {
               step={1}
               className="w-full"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-500">
               Add a natural delay before responding to feel more human-like
             </p>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label>Max Response Length</Label>
-              <span className="text-sm text-muted-foreground">
+              <Label className="text-gray-700">Max Response Length</Label>
+              <span className="text-sm text-gray-600">
                 {settings.maxResponseLength} characters
               </span>
             </div>
@@ -210,7 +244,7 @@ export function BehaviorSettings() {
               step={50}
               className="w-full"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-500">
               Limit response length for concise messages
             </p>
           </div>
@@ -218,23 +252,23 @@ export function BehaviorSettings() {
       </Card>
 
       {/* UI Behaviors */}
-      <Card className="bg-card border-border">
-        <CardHeader>
+      <Card className="bg-white border border-gray-200 shadow-sm">
+        <CardHeader className="bg-gray-50 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-chart-3/10">
-              <MessageSquare className="w-5 h-5 text-chart-3" />
+            <div className="p-2 rounded-lg bg-blue-100">
+              <MessageSquare className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <CardTitle>Chat Behaviors</CardTitle>
-              <CardDescription>Control chat interface behaviors</CardDescription>
+              <CardTitle className="text-gray-900">Chat Behaviors</CardTitle>
+              <CardDescription className="text-gray-600">Control chat interface behaviors</CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+        <CardContent className="space-y-4 p-6">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200">
             <div>
-              <p className="font-medium text-foreground">Show Typing Indicator</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="font-medium text-gray-900">Show Typing Indicator</p>
+              <p className="text-sm text-gray-600">
                 Display "typing..." while AI generates response
               </p>
             </div>
@@ -244,10 +278,10 @@ export function BehaviorSettings() {
             />
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200">
             <div>
-              <p className="font-medium text-foreground">Send Read Receipts</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="font-medium text-gray-900">Send Read Receipts</p>
+              <p className="text-sm text-gray-600">
                 Mark messages as read when processed
               </p>
             </div>
@@ -257,10 +291,10 @@ export function BehaviorSettings() {
             />
           </div>
 
-          <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200">
             <div>
-              <p className="font-medium text-foreground">Enable Quick Replies</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="font-medium text-gray-900">Enable Quick Replies</p>
+              <p className="text-sm text-gray-600">
                 Show suggested response buttons when appropriate
               </p>
             </div>
@@ -274,9 +308,9 @@ export function BehaviorSettings() {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+        <Button onClick={handleSave} disabled={isSaving || isLoading} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
           <Save className="w-4 h-4" />
-          {isSaving ? "Saving..." : "Save Behavior Settings"}
+          {(isSaving || isLoading) ? "Processing..." : "Save Behavior Settings"}
         </Button>
       </div>
     </div>

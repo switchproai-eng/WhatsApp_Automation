@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
 import { Sparkles, Building2, Target, MessageSquare, ShieldAlert, Save, Copy, RefreshCw } from "lucide-react"
 
 export function AIPromptBuilder() {
@@ -16,6 +17,28 @@ export function AIPromptBuilder() {
     constraints: [] as string[],
     customInstructions: "",
   })
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Load saved prompt configuration when component mounts
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await fetch("/api/agent/config")
+        if (response.ok) {
+          const data = await response.json()
+          if (data.config?.prompt) {
+            setConfig(data.config.prompt)
+          }
+        }
+      } catch (error) {
+        console.error("Error loading AI prompt configuration:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadConfig()
+  }, [])
   const [newGoal, setNewGoal] = useState("")
   const [newConstraint, setNewConstraint] = useState("")
   const [generatedPrompt, setGeneratedPrompt] = useState("")
@@ -101,11 +124,22 @@ Remember to:
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      await fetch("/api/agent/config", {
+      const response = await fetch("/api/agent/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ section: "prompt", data: { ...config, generatedPrompt } }),
       })
+
+      if (response.ok) {
+        toast.success("AI prompt configuration saved successfully!")
+      } else {
+        const errorText = await response.text();
+        console.error("Failed to save AI prompt configuration:", errorText);
+        toast.error("Failed to save AI prompt configuration. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error saving AI prompt configuration:", error);
+      toast.error("An error occurred while saving the AI prompt configuration.");
     } finally {
       setIsSaving(false)
     }
@@ -118,26 +152,27 @@ Remember to:
   return (
     <div className="space-y-6">
       {/* Business Description */}
-      <Card className="bg-card border-border">
-        <CardHeader>
+      <Card className="bg-white border border-gray-200 shadow-sm">
+        <CardHeader className="bg-gray-50 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Building2 className="w-5 h-5 text-primary" />
+            <div className="p-2 rounded-lg bg-blue-100">
+              <Building2 className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <CardTitle>Business Description</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-gray-900">Business Description</CardTitle>
+              <CardDescription className="text-gray-600">
                 Describe your business for the AI to understand context
               </CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <Textarea
             placeholder="e.g., We are a digital marketing agency specializing in social media management and paid advertising for small businesses..."
             value={config.businessDescription}
             onChange={(e) => setConfig({ ...config, businessDescription: e.target.value })}
             rows={3}
+            className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-gray-900 bg-white"
           />
         </CardContent>
       </Card>
@@ -177,13 +212,13 @@ Remember to:
           <div className="flex gap-2">
             <input
               type="text"
-              className="flex-1 px-3 py-2 rounded-md border border-input bg-background text-foreground"
+              className="flex-1 px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500"
               placeholder="Add custom goal..."
               value={newGoal}
               onChange={(e) => setNewGoal(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addGoal(newGoal)}
             />
-            <Button onClick={() => addGoal(newGoal)} disabled={!newGoal}>
+            <Button onClick={() => addGoal(newGoal)} disabled={!newGoal} className="bg-blue-600 hover:bg-blue-700 text-white">
               Add
             </Button>
           </div>
@@ -268,13 +303,13 @@ Remember to:
           <div className="flex gap-2">
             <input
               type="text"
-              className="flex-1 px-3 py-2 rounded-md border border-input bg-background text-foreground"
+              className="flex-1 px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500"
               placeholder="Add custom constraint..."
               value={newConstraint}
               onChange={(e) => setNewConstraint(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addConstraint(newConstraint)}
             />
-            <Button onClick={() => addConstraint(newConstraint)} disabled={!newConstraint}>
+            <Button onClick={() => addConstraint(newConstraint)} disabled={!newConstraint} className="bg-blue-600 hover:bg-blue-700 text-white">
               Add
             </Button>
           </div>
@@ -325,32 +360,32 @@ Remember to:
       </Card>
 
       {/* Generated Prompt */}
-      <Card className="bg-card border-border">
-        <CardHeader>
+      <Card className="bg-white border border-gray-200 shadow-sm">
+        <CardHeader className="bg-gray-50 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Sparkles className="w-5 h-5 text-primary" />
+              <div className="p-2 rounded-lg bg-purple-100">
+                <Sparkles className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <CardTitle>Generated System Prompt</CardTitle>
-                <CardDescription>This prompt will guide your AI agent's behavior</CardDescription>
+                <CardTitle className="text-gray-900">Generated System Prompt</CardTitle>
+                <CardDescription className="text-gray-600">This prompt will guide your AI agent's behavior</CardDescription>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={generatePrompt} className="gap-2 bg-transparent">
+              <Button variant="outline" size="sm" onClick={generatePrompt} className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-100">
                 <RefreshCw className="w-4 h-4" />
                 Regenerate
               </Button>
-              <Button variant="outline" size="sm" onClick={copyPrompt} className="gap-2 bg-transparent">
+              <Button variant="outline" size="sm" onClick={copyPrompt} className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-100">
                 <Copy className="w-4 h-4" />
                 Copy
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-lg border border-border bg-background p-4 font-mono text-sm whitespace-pre-wrap text-muted-foreground max-h-96 overflow-y-auto">
+        <CardContent className="p-6">
+          <div className="rounded-lg border border-gray-300 bg-gray-50 p-4 font-mono text-sm whitespace-pre-wrap text-gray-800 max-h-96 overflow-y-auto">
             {generatedPrompt}
           </div>
         </CardContent>
@@ -358,9 +393,9 @@ Remember to:
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+        <Button onClick={handleSave} disabled={isSaving || isLoading} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
           <Save className="w-4 h-4" />
-          {isSaving ? "Saving..." : "Save AI Configuration"}
+          {(isSaving || isLoading) ? "Processing..." : "Save AI Configuration"}
         </Button>
       </div>
     </div>

@@ -29,6 +29,7 @@ const mainNavItems = [
   { icon: MessageSquare, label: "Inbox", href: "/dashboard/inbox" },
   { icon: Users, label: "Contacts", href: "/dashboard/contacts" },
   { icon: Bot, label: "AI Agent", href: "/dashboard/agent" },
+  { icon: Users, label: "Agents", href: "/dashboard/agents" },
   { icon: Megaphone, label: "Campaigns", href: "/dashboard/campaigns" },
   { icon: FileText, label: "Templates", href: "/dashboard/templates" },
   { icon: Zap, label: "Quick Replies", href: "/dashboard/quick-replies" },

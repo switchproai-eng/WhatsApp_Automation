@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
 import {
   Select,
   SelectContent,
@@ -33,16 +34,49 @@ export function BookingSettings() {
     confirmationMessage: "Your appointment has been booked for {{date}} at {{time}}.",
     reminderMessage: "Reminder: You have an appointment tomorrow at {{time}}.",
   })
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Load saved booking settings when component mounts
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch("/api/agent/config")
+        if (response.ok) {
+          const data = await response.json()
+          if (data.config?.booking) {
+            setSettings(data.config.booking)
+          }
+        }
+      } catch (error) {
+        console.error("Error loading booking settings:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadSettings()
+  }, [])
   const [isSaving, setIsSaving] = useState(false)
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      await fetch("/api/agent/config", {
+      const response = await fetch("/api/agent/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ section: "booking", data: settings }),
       })
+
+      if (response.ok) {
+        toast.success("Booking settings saved successfully!")
+      } else {
+        const errorText = await response.text();
+        console.error("Failed to save booking settings:", errorText);
+        toast.error("Failed to save booking settings. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error saving booking settings:", error);
+      toast.error("An error occurred while saving the booking settings.");
     } finally {
       setIsSaving(false)
     }
@@ -62,16 +96,16 @@ export function BookingSettings() {
   return (
     <div className="space-y-6">
       {/* Enable Booking */}
-      <Card className="bg-card border-border">
-        <CardHeader>
+      <Card className="bg-white border border-gray-200 shadow-sm">
+        <CardHeader className="bg-gray-50 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Calendar className="w-5 h-5 text-primary" />
+              <div className="p-2 rounded-lg bg-blue-100">
+                <Calendar className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <CardTitle>Booking System</CardTitle>
-                <CardDescription>Allow customers to schedule appointments</CardDescription>
+                <CardTitle className="text-gray-900">Booking System</CardTitle>
+                <CardDescription className="text-gray-600">Allow customers to schedule appointments</CardDescription>
               </div>
             </div>
             <Switch
@@ -85,27 +119,27 @@ export function BookingSettings() {
       {settings.enableBooking && (
         <>
           {/* Calendar Integration */}
-          <Card className="bg-card border-border">
-            <CardHeader>
+          <Card className="bg-white border border-gray-200 shadow-sm">
+            <CardHeader className="bg-gray-50 border-b border-gray-100">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-chart-2/10">
-                  <Link2 className="w-5 h-5 text-chart-2" />
+                <div className="p-2 rounded-lg bg-green-100">
+                  <Link2 className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <CardTitle>Calendar Integration</CardTitle>
-                  <CardDescription>Connect your calendar for real-time availability</CardDescription>
+                  <CardTitle className="text-gray-900">Calendar Integration</CardTitle>
+                  <CardDescription className="text-gray-600">Connect your calendar for real-time availability</CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-6">
               <div className="space-y-2">
-                <Label>Calendar Provider</Label>
+                <Label className="text-gray-700">Calendar Provider</Label>
                 <Select
                   value={settings.calendarProvider}
                   onValueChange={(value) => setSettings({ ...settings, calendarProvider: value })}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger className="text-gray-900 bg-white">
+                    <SelectValue className="text-gray-900" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No integration</SelectItem>
@@ -119,15 +153,16 @@ export function BookingSettings() {
 
               {settings.calendarProvider !== "none" && (
                 <div className="space-y-2">
-                  <Label>Calendar URL / API Key</Label>
+                  <Label className="text-gray-700">Calendar URL / API Key</Label>
                   <div className="flex gap-2">
                     <Input
                       type="password"
                       value={settings.calendarUrl}
                       onChange={(e) => setSettings({ ...settings, calendarUrl: e.target.value })}
                       placeholder="Enter calendar integration URL or API key"
+                      className="text-gray-900 bg-white"
                     />
-                    <Button variant="outline" className="gap-2 bg-transparent">
+                    <Button variant="outline" className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-100">
                       <ExternalLink className="w-4 h-4" />
                       Connect
                     </Button>
@@ -138,27 +173,27 @@ export function BookingSettings() {
           </Card>
 
           {/* Availability */}
-          <Card className="bg-card border-border">
-            <CardHeader>
+          <Card className="bg-white border border-gray-200 shadow-sm">
+            <CardHeader className="bg-gray-50 border-b border-gray-100">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-chart-3/10">
-                  <Clock className="w-5 h-5 text-chart-3" />
+                <div className="p-2 rounded-lg bg-purple-100">
+                  <Clock className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <CardTitle>Availability</CardTitle>
-                  <CardDescription>Set when appointments can be booked</CardDescription>
+                  <CardTitle className="text-gray-900">Availability</CardTitle>
+                  <CardDescription className="text-gray-600">Set when appointments can be booked</CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-6">
               <div className="space-y-2">
-                <Label>Available Days</Label>
+                <Label className="text-gray-700">Available Days</Label>
                 <div className="flex flex-wrap gap-2">
                   {days.map((day) => (
                     <Badge
                       key={day}
                       variant={settings.availableDays.includes(day) ? "default" : "outline"}
-                      className="cursor-pointer px-4 py-2"
+                      className={`cursor-pointer px-4 py-2 ${settings.availableDays.includes(day) ? 'bg-blue-100 text-blue-800' : 'bg-white text-gray-700 border-gray-300'}`}
                       onClick={() => toggleDay(day)}
                     >
                       {day}
@@ -169,34 +204,36 @@ export function BookingSettings() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Start Time</Label>
+                  <Label className="text-gray-700">Start Time</Label>
                   <Input
                     type="time"
                     value={settings.startTime}
                     onChange={(e) => setSettings({ ...settings, startTime: e.target.value })}
+                    className="text-gray-900 bg-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>End Time</Label>
+                  <Label className="text-gray-700">End Time</Label>
                   <Input
                     type="time"
                     value={settings.endTime}
                     onChange={(e) => setSettings({ ...settings, endTime: e.target.value })}
+                    className="text-gray-900 bg-white"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Slot Duration (minutes)</Label>
+                  <Label className="text-gray-700">Slot Duration (minutes)</Label>
                   <Select
                     value={settings.slotDuration.toString()}
                     onValueChange={(value) =>
                       setSettings({ ...settings, slotDuration: parseInt(value) })
                     }
                   >
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger className="text-gray-900 bg-white">
+                      <SelectValue className="text-gray-900" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="15">15 minutes</SelectItem>
@@ -208,15 +245,15 @@ export function BookingSettings() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Buffer Between Slots (minutes)</Label>
+                  <Label className="text-gray-700">Buffer Between Slots (minutes)</Label>
                   <Select
                     value={settings.bufferTime.toString()}
                     onValueChange={(value) =>
                       setSettings({ ...settings, bufferTime: parseInt(value) })
                     }
                   >
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger className="text-gray-900 bg-white">
+                      <SelectValue className="text-gray-900" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="0">No buffer</SelectItem>
@@ -231,7 +268,7 @@ export function BookingSettings() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Minimum Advance Booking (hours)</Label>
+                  <Label className="text-gray-700">Minimum Advance Booking (hours)</Label>
                   <Input
                     type="number"
                     value={settings.minAdvanceBooking}
@@ -239,13 +276,14 @@ export function BookingSettings() {
                       setSettings({ ...settings, minAdvanceBooking: parseInt(e.target.value) })
                     }
                     min={1}
+                    className="text-gray-900 bg-white"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-600">
                     How far in advance appointments must be booked
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Maximum Advance Booking (days)</Label>
+                  <Label className="text-gray-700">Maximum Advance Booking (days)</Label>
                   <Input
                     type="number"
                     value={settings.maxAdvanceBooking}
@@ -253,8 +291,9 @@ export function BookingSettings() {
                       setSettings({ ...settings, maxAdvanceBooking: parseInt(e.target.value) })
                     }
                     min={1}
+                    className="text-gray-900 bg-white"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-600">
                     How far into the future appointments can be booked
                   </p>
                 </div>
@@ -263,16 +302,16 @@ export function BookingSettings() {
           </Card>
 
           {/* Reminders */}
-          <Card className="bg-card border-border">
-            <CardHeader>
+          <Card className="bg-white border border-gray-200 shadow-sm">
+            <CardHeader className="bg-gray-50 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-chart-4/10">
-                    <Bell className="w-5 h-5 text-chart-4" />
+                  <div className="p-2 rounded-lg bg-orange-100">
+                    <Bell className="w-5 h-5 text-orange-600" />
                   </div>
                   <div>
-                    <CardTitle>Reminders</CardTitle>
-                    <CardDescription>Send appointment reminders to customers</CardDescription>
+                    <CardTitle className="text-gray-900">Reminders</CardTitle>
+                    <CardDescription className="text-gray-600">Send appointment reminders to customers</CardDescription>
                   </div>
                 </div>
                 <Switch
@@ -284,17 +323,17 @@ export function BookingSettings() {
               </div>
             </CardHeader>
             {settings.enableReminders && (
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-6">
                 <div className="space-y-2">
-                  <Label>Send Reminder Before (hours)</Label>
+                  <Label className="text-gray-700">Send Reminder Before (hours)</Label>
                   <Select
                     value={settings.reminderTime.toString()}
                     onValueChange={(value) =>
                       setSettings({ ...settings, reminderTime: parseInt(value) })
                     }
                   >
-                    <SelectTrigger className="w-full md:w-48">
-                      <SelectValue />
+                    <SelectTrigger className="w-full md:w-48 text-gray-900 bg-white">
+                      <SelectValue className="text-gray-900" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="1">1 hour</SelectItem>
@@ -307,25 +346,27 @@ export function BookingSettings() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Confirmation Message</Label>
+                  <Label className="text-gray-700">Confirmation Message</Label>
                   <Input
                     value={settings.confirmationMessage}
                     onChange={(e) =>
                       setSettings({ ...settings, confirmationMessage: e.target.value })
                     }
+                    className="text-gray-900 bg-white"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-600">
                     {"Use {{date}}, {{time}}, {{name}} as placeholders"}
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Reminder Message</Label>
+                  <Label className="text-gray-700">Reminder Message</Label>
                   <Input
                     value={settings.reminderMessage}
                     onChange={(e) =>
                       setSettings({ ...settings, reminderMessage: e.target.value })
                     }
+                    className="text-gray-900 bg-white"
                   />
                 </div>
               </CardContent>
@@ -336,9 +377,9 @@ export function BookingSettings() {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+        <Button onClick={handleSave} disabled={isSaving || isLoading} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
           <Save className="w-4 h-4" />
-          {isSaving ? "Saving..." : "Save Booking Settings"}
+          {(isSaving || isLoading) ? "Processing..." : "Save Booking Settings"}
         </Button>
       </div>
     </div>

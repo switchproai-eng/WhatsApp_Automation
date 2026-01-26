@@ -1,7 +1,23 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(cat:*)",
+      "Bash(npm install:*)",
+      "Bash(git checkout:*)",
+      "Bash(curl:*)",
+      "Bash(npm run build:*)",
+      "Bash(node scripts/test-ai-response.js:*)",
+      "Bash(node scripts/test-ai-response.mjs:*)",
+      "Bash(npm ls:*)",
+      "Bash(node scripts/seed-agent-config.mjs:*)",
+      "Bash(ls:*)",
+      "Bash(git grep:*)",
+      "Bash(node scripts/migrate-single-to-multi-agents.mjs:*)",
+      "Bash(node -e:*)",
+      "Bash(node scripts/diagnose-db.mjs:*)",
+      "Bash(node scripts/migrate-data-only.mjs:*)",
+      "Bash(node scripts/test-agents.mjs:*)"
     ]
   }
 }
