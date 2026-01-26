@@ -38,19 +38,28 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { name, config = {}, is_default = false } = await request.json();
 
+    if (is_default) {
+      // If setting as default, first unset all others
+      await query<any>(`
+        UPDATE ai_assistants SET is_default = false WHERE tenant_id = $1 AND id != $2
+      `, [session.tenantId, id]);
+    }
+
+    // Update the agent
     await query<any>(`
       UPDATE ai_assistants SET name = $1, config = $2::jsonb, is_default = $3
       WHERE id = $4 AND tenant_id = $5
     `, [name, config, is_default, id, session.tenantId]);
 
+    // Update tenant's default_agent_id if setting as default (only if the column exists)
+    // Commenting out for now as this column may not exist in the tenants table
+    /*
     if (is_default) {
-      await query<any>(`
-        UPDATE ai_assistants SET is_default = false WHERE tenant_id = $1 AND id != $2
-      `, [session.tenantId, id]);
       await query<any>(`
         UPDATE tenants SET default_agent_id = $1 WHERE id = $2
       `, [id, session.tenantId]);
     }
+    */
 
     const agent = await queryOne<any>(`
       SELECT id, name, config, is_default, created_at, updated_at

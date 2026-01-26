@@ -51,22 +51,22 @@ export default function AgentEditorPage() {
     }
   }, [agentId]);
 
-  const createNewAgent = async (name: string = 'New Agent') => {
+  const createNewAgent = async (name: string = 'New Agent', config: any = {}) => {
     try {
       const res = await fetch('/api/agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, config: {} })
+        body: JSON.stringify({ name, config })
       });
       if (res.ok) {
         const data = await res.json();
         // Update the current agent with the new ID
         setAgent({
           ...data.agent,
-          config: {}
+          config: data.agent.config || config
         });
         // Update the URL to the new agent's page
-        router.replace(`/dashboard/agents/${data.agent.id}`);
+        router.push(`/dashboard/agents/${data.agent.id}`);
         toast({ title: "Success", description: "Agent created successfully" });
         return data.agent.id;
       } else {
@@ -109,11 +109,12 @@ export default function AgentEditorPage() {
 
       // If this is a new agent (id is 'new'), create it first
       if (agent.id === 'new') {
-        const newAgentId = await createNewAgent(agent.name);
+        const newAgentId = await createNewAgent(agent.name, agent.config);
         if (!newAgentId) {
           return; // Error occurred during creation
         }
-        agentIdToUse = newAgentId;
+        // The agent is already created and the page redirected, so we don't need to save again
+        return;
       }
 
       // Update the agent with the current config

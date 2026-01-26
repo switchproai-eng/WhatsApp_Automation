@@ -59,17 +59,29 @@ export default function AgentsPage() {
 
   const handleSetDefault = async (id: string) => {
     try {
-      const agent = agents.find(a => a.id === id);
+      // First, get the current agent details to preserve the config
+      const agentRes = await fetch(`/api/agents/${id}`);
+      if (!agentRes.ok) {
+        throw new Error("Failed to fetch agent details");
+      }
+      const agentData = await agentRes.json();
+
+      // Update the agent to be the default one
       const res = await fetch(`/api/agents/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: agent?.name, config: {}, is_default: true })
+        body: JSON.stringify({
+          name: agentData.agent.name,
+          config: agentData.agent.config,
+          is_default: true
+        })
       });
       if (res.ok) {
         fetchAgents();
         toast({ title: "Success", description: "Set as default agent" });
       }
     } catch (error) {
+      console.error("Error setting default agent:", error);
       toast({ title: "Error", description: "Failed to set default" });
     }
   };
