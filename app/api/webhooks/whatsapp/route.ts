@@ -249,33 +249,14 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
 
     // Check if we should auto-respond with AI
     try {
-      // First, try to find an assistant associated with this tenant
+      // First, try to find an agent associated with this tenant
       let agentResult = await query(`
-        SELECT id, system_prompt, name, model, temperature, max_tokens, config FROM ai_assistants
+        SELECT id, config FROM ai_agents
         WHERE tenant_id = $1 AND is_default = true
         LIMIT 1
       `, [tenantId]);
 
-      // Create a config object from the assistant data
-      const assistantData = agentResult.length > 0 ? agentResult[0] : null;
-      let agentConfig: any = null;
-
-      if (assistantData) {
-        agentConfig = {
-          profile: {
-            agentName: assistantData.name,
-            systemPrompt: assistantData.system_prompt,
-            model: assistantData.model,
-            temperature: assistantData.temperature,
-            maxTokens: assistantData.max_tokens,
-          },
-          capabilities: {
-            autoRespond: true, // Assuming auto-respond is enabled for default assistants
-          },
-          // Include any additional config from the config field if it exists
-          ...assistantData.config
-        };
-      }
+      const agentConfig = agentResult.length > 0 ? agentResult[0].config : null;
 
       // Check if AI auto-respond is enabled and within business hours
       const isBusinessHours = await checkBusinessHours(tenantId, agentConfig?.profile?.timezone);
