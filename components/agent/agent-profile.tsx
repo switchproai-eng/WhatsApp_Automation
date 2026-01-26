@@ -52,57 +52,98 @@ const languages = [
   { code: "hi", name: "Hindi" },
 ]
 
-export function AgentProfile() {
+export function AgentProfile({ agentId, initialConfig = {}, onUpdate }: { agentId?: string; initialConfig?: any; onUpdate?: (updatedConfig: any) => void }) {
   const [profile, setProfile] = useState({
-    name: "",
-    industry: "",
-    description: "",
-    tone: "professional",
-    language: "en",
-    businessHoursStart: "09:00",
-    businessHoursEnd: "18:00",
-    timezone: "UTC",
-    workDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    name: initialConfig.name || "",
+    industry: initialConfig.industry || "",
+    description: initialConfig.description || "",
+    tone: initialConfig.tone || "professional",
+    language: initialConfig.language || "en",
+    businessHoursStart: initialConfig.businessHoursStart || "09:00",
+    businessHoursEnd: initialConfig.businessHoursEnd || "18:00",
+    timezone: initialConfig.timezone || "UTC",
+    workDays: initialConfig.workDays || ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    phoneNumber: initialConfig.phoneNumber || "",
   })
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Load saved profile data when component mounts
+  // Load saved profile data when component mounts if no initial config provided
   useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const response = await fetch("/api/agent/config")
-        if (response.ok) {
-          const data = await response.json()
-          if (data.config?.profile) {
-            setProfile(data.config.profile)
+    if (!initialConfig || Object.keys(initialConfig).length === 0) {
+      const loadProfile = async () => {
+        try {
+          const response = await fetch("/api/agent/config")
+          if (response.ok) {
+            const data = await response.json()
+            if (data.config?.profile) {
+              setProfile(data.config.profile)
+            }
           }
+        } catch (error) {
+          console.error("Error loading profile:", error)
+        } finally {
+          setIsLoading(false)
         }
-      } catch (error) {
-        console.error("Error loading profile:", error)
-      } finally {
-        setIsLoading(false)
       }
-    }
 
-    loadProfile()
+      loadProfile()
+    }
   }, [])
+
   const [isSaving, setIsSaving] = useState(false)
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const response = await fetch("/api/agent/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section: "profile", data: profile }),
-      })
+      if (agentId) {
+        // Get current agent to preserve is_default status
+        const agentResponse = await fetch(`/api/agents/${agentId}`);
+        if (!agentResponse.ok) {
+          throw new Error("Failed to fetch agent details");
+        }
+        const agentData = await agentResponse.json();
 
-      if (response.ok) {
-        toast.success("Profile saved successfully!")
+        // Update the specific agent - also update the main name if it differs from the profile name
+        const response = await fetch(`/api/agents/${agentId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: profile.name || agentData.agent.name, // Use profile name if available, otherwise keep existing name
+            config: { ...agentData.agent.config, profile },
+            is_default: agentData.agent.is_default
+          }),
+        })
+
+        if (response.ok) {
+          toast.success("Profile saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate(profile);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save profile:", errorText);
+          toast.error("Failed to save profile. Please try again.");
+        }
       } else {
-        const errorText = await response.text();
-        console.error("Failed to save profile:", errorText);
-        toast.error("Failed to save profile. Please try again.");
+        // Use the old endpoint for backward compatibility
+        const response = await fetch("/api/agent/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ section: "profile", data: profile }),
+        })
+
+        if (response.ok) {
+          toast.success("Profile saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate(profile);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save profile:", errorText);
+          toast.error("Failed to save profile. Please try again.");
+        }
       }
     } catch (error) {
       console.error("Error saving profile:", error);
@@ -186,6 +227,20 @@ export function AgentProfile() {
             />
             <p className="text-xs text-gray-500">
               Help the AI understand your business context for better responses
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phoneNumber" className="text-gray-700">WhatsApp Phone Number</Label>
+            <Input
+              id="phoneNumber"
+              placeholder="+1234567890"
+              value={profile.phoneNumber}
+              onChange={(e) => setProfile({ ...profile, phoneNumber: e.target.value })}
+              className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-gray-900 bg-white"
+            />
+            <p className="text-xs text-gray-500">
+              Enter the WhatsApp number associated with this agent (e.g., +1234567890)
             </p>
           </div>
         </CardContent>

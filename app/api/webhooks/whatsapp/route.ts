@@ -255,14 +255,24 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
 
     // Check if we should auto-respond with AI
     try {
-      // Get agent configuration
-      const configResult = await sql`
-        SELECT config FROM agent_configurations
-        WHERE tenant_id = \$${tenantId}
+      // First, try to find an agent associated with this phone number
+      let agentResult = await sql`
+        SELECT id, config FROM ai_agents
+        WHERE tenant_id = ${tenantId}
+        AND config->>'phoneNumber' = ${senderPhone}
         LIMIT 1
       `;
 
-      const agentConfig = configResult.length > 0 ? configResult[0].config : null;
+      // If no agent found for this specific phone number, use the default agent
+      if (agentResult.length === 0) {
+        agentResult = await sql`
+          SELECT id, config FROM ai_agents
+          WHERE tenant_id = ${tenantId} AND is_default = true
+          LIMIT 1
+        `;
+      }
+
+      const agentConfig = agentResult.length > 0 ? agentResult[0].config : null;
 
       // Check if AI auto-respond is enabled and within business hours
       const isBusinessHours = await checkBusinessHours(tenantId);
@@ -298,12 +308,13 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
           businessDescription: agentConfig?.profile?.description,
           tone: agentConfig?.profile?.tone || "professional",
           language: agentConfig?.profile?.language || "en",
+          capabilities: agentConfig?.capabilities || {},
         });
 
         // Send response via WhatsApp
         const whatsappService = new WhatsAppService({
           phoneNumberId,
-          accessToken,
+          accessToken: accountResult[0].access_token, // Fixed: use the access token from the DB
         });
 
         await whatsappService.sendTextMessage({
@@ -323,10 +334,10 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
             sent_at
           )
           VALUES (
-            \$${conversationId},
+            ${conversationId},
             'outbound',
             'text',
-            \$${aiResponse},
+            ${aiResponse},
             'sent',
             true,
             NOW()
@@ -337,10 +348,10 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
         await sql`
           UPDATE conversations
           SET
-            last_message = \$${aiResponse},
+            last_message = ${aiResponse},
             last_message_at = NOW(),
             updated_at = NOW()
-          WHERE id = \$${conversationId}
+          WHERE id = ${conversationId}
         `;
 
         console.log("AI auto-response sent successfully");
@@ -374,15 +385,33 @@ async function handleMessageStatus(status: {
   errors?: Array<{ code: number; title: string }>;
 }) {
   try {
-    await sql`
-      UPDATE messages 
-      SET 
-        status = ${status.status},
-        ${status.status === "delivered" ? sql`delivered_at = to_timestamp(${parseInt(status.timestamp)}),` : sql``}
-        ${status.status === "read" ? sql`read_at = to_timestamp(${parseInt(status.timestamp)}),` : sql``}
-        updated_at = NOW()
-      WHERE whatsapp_message_id = ${status.id}
-    `;
+    if (status.status === "delivered") {
+      await sql`
+        UPDATE messages
+        SET
+          status = ${status.status},
+          delivered_at = to_timestamp(${parseInt(status.timestamp)}),
+          updated_at = NOW()
+        WHERE whatsapp_message_id = ${status.id}
+      `;
+    } else if (status.status === "read") {
+      await sql`
+        UPDATE messages
+        SET
+          status = ${status.status},
+          read_at = to_timestamp(${parseInt(status.timestamp)}),
+          updated_at = NOW()
+        WHERE whatsapp_message_id = ${status.id}
+      `;
+    } else {
+      await sql`
+        UPDATE messages
+        SET
+          status = ${status.status},
+          updated_at = NOW()
+        WHERE whatsapp_message_id = ${status.id}
+      `;
+    }
 
     console.log("Message status updated:", status.id, status.status);
   } catch (error) {

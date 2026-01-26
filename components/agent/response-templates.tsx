@@ -17,7 +17,7 @@ interface Template {
   color: string
 }
 
-export function ResponseTemplates() {
+export function ResponseTemplates({ agentId, initialConfig = {}, onUpdate }: { agentId?: string; initialConfig?: any; onUpdate?: (updatedConfig: any) => void }) {
   const [templates, setTemplates] = useState<Template[]>([
     {
       id: "greeting",
@@ -65,27 +65,29 @@ export function ResponseTemplates() {
       color: "bg-chart-5/10 text-chart-5",
     },
   ])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Load saved response templates when component mounts
+  // Load saved response templates when component mounts if no initial config provided
   useEffect(() => {
-    const loadTemplates = async () => {
-      try {
-        const response = await fetch("/api/agent/config")
-        if (response.ok) {
-          const data = await response.json()
-          if (data.config?.templates) {
-            setTemplates(data.config.templates)
+    if (!initialConfig || !initialConfig.templates) {
+      const loadTemplates = async () => {
+        try {
+          const response = await fetch("/api/agent/config")
+          if (response.ok) {
+            const data = await response.json()
+            if (data.config?.templates) {
+              setTemplates(data.config.templates)
+            }
           }
+        } catch (error) {
+          console.error("Error loading response templates:", error)
+        } finally {
+          setIsLoading(false)
         }
-      } catch (error) {
-        console.error("Error loading response templates:", error)
-      } finally {
-        setIsLoading(false)
       }
-    }
 
-    loadTemplates()
+      loadTemplates()
+    }
   }, [])
   const [isSaving, setIsSaving] = useState(false)
 
@@ -96,18 +98,55 @@ export function ResponseTemplates() {
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const response = await fetch("/api/agent/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section: "templates", data: templates }),
-      })
+      if (agentId) {
+        // Get current agent to preserve other config sections
+        const agentResponse = await fetch(`/api/agents/${agentId}`);
+        if (!agentResponse.ok) {
+          throw new Error("Failed to fetch agent details");
+        }
+        const agentData = await agentResponse.json();
 
-      if (response.ok) {
-        toast.success("Response templates saved successfully!")
+        // Update the specific agent
+        const response = await fetch(`/api/agents/${agentId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: agentData.agent.name,
+            config: { ...agentData.agent.config, templates },
+            is_default: agentData.agent.is_default
+          }),
+        })
+
+        if (response.ok) {
+          toast.success("Response templates saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate(templates);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save response templates:", errorText);
+          toast.error("Failed to save response templates. Please try again.");
+        }
       } else {
-        const errorText = await response.text();
-        console.error("Failed to save response templates:", errorText);
-        toast.error("Failed to save response templates. Please try again.");
+        // Use the old endpoint for backward compatibility
+        const response = await fetch("/api/agent/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ section: "templates", data: templates }),
+        })
+
+        if (response.ok) {
+          toast.success("Response templates saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate(templates);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save response templates:", errorText);
+          toast.error("Failed to save response templates. Please try again.");
+        }
       }
     } catch (error) {
       console.error("Error saving response templates:", error);

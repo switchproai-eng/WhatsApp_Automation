@@ -8,17 +8,25 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const config = await queryOne<{
+  // Get the default agent for the tenant
+  const agent = await queryOne<{
     id: string
     tenant_id: string
+    name: string
     config: Record<string, unknown>
+    is_default: boolean
     updated_at: string
   }>(
-    `SELECT * FROM agent_configurations WHERE tenant_id = $1`,
+    `SELECT id, tenant_id, name, config, is_default, updated_at
+     FROM ai_agents
+     WHERE tenant_id = $1 AND is_default = true`,
     [session.tenantId]
   )
 
-  return NextResponse.json({ config: config?.config || {} })
+  return NextResponse.json({
+    agent: agent || null,
+    config: agent?.config || {}
+  })
 }
 
 export async function POST(request: Request) {
@@ -29,12 +37,13 @@ export async function POST(request: Request) {
 
   const { section, data } = await request.json()
 
-  // Get existing config or create empty object
+  // Get existing default agent or create empty object
   const existing = await queryOne<{
     id: string
     config: Record<string, unknown>
+    name: string
   }>(
-    `SELECT id, config FROM agent_configurations WHERE tenant_id = $1`,
+    `SELECT id, config, name FROM ai_agents WHERE tenant_id = $1 AND is_default = true`,
     [session.tenantId]
   )
 
@@ -44,20 +53,37 @@ export async function POST(request: Request) {
   }
 
   if (existing) {
-    // Update existing config
+    // Update existing agent config
     await query(
-      `UPDATE agent_configurations 
-       SET config = $1, updated_at = NOW() 
-       WHERE tenant_id = $2`,
-      [JSON.stringify(newConfig), session.tenantId]
+      `UPDATE ai_agents
+       SET config = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [JSON.stringify(newConfig), existing.id]
     )
   } else {
-    // Create new config
+    // Create new default agent with the config
+    const agentName = "Default AI Agent";
     await query(
-      `INSERT INTO agent_configurations (id, tenant_id, config, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, NOW(), NOW())`,
-      [session.tenantId, JSON.stringify(newConfig)]
+      `INSERT INTO ai_agents (tenant_id, name, config, is_default, created_at, updated_at)
+       VALUES ($1, $2, $3, true, NOW(), NOW())
+       ON CONFLICT (tenant_id, is_default) DO UPDATE SET
+         config = $3,
+         updated_at = NOW()`,
+      [session.tenantId, agentName, JSON.stringify(newConfig)]
     )
+
+    // Update tenant to reference the default agent
+    const newAgent = await queryOne<{ id: string }>(
+      `SELECT id FROM ai_agents WHERE tenant_id = $1 AND is_default = true`,
+      [session.tenantId]
+    );
+
+    if (newAgent) {
+      await query(
+        `UPDATE tenants SET default_agent_id = $1 WHERE id = $2`,
+        [newAgent.id, session.tenantId]
+      );
+    }
   }
 
   return NextResponse.json({ success: true, config: newConfig })

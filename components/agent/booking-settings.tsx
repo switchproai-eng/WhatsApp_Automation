@@ -17,62 +17,101 @@ import {
 } from "@/components/ui/select"
 import { Calendar, Clock, Bell, Link2, Save, ExternalLink } from "lucide-react"
 
-export function BookingSettings() {
+export function BookingSettings({ agentId, initialConfig = {}, onUpdate }: { agentId?: string; initialConfig?: any; onUpdate?: (updatedConfig: any) => void }) {
   const [settings, setSettings] = useState({
-    enableBooking: false,
-    calendarProvider: "none",
-    calendarUrl: "",
-    slotDuration: 30,
-    bufferTime: 15,
-    maxAdvanceBooking: 30,
-    minAdvanceBooking: 24,
-    availableDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
-    startTime: "09:00",
-    endTime: "17:00",
-    enableReminders: true,
-    reminderTime: 24,
-    confirmationMessage: "Your appointment has been booked for {{date}} at {{time}}.",
-    reminderMessage: "Reminder: You have an appointment tomorrow at {{time}}.",
+    enableBooking: initialConfig.enableBooking ?? false,
+    calendarProvider: initialConfig.calendarProvider ?? "none",
+    calendarUrl: initialConfig.calendarUrl ?? "",
+    slotDuration: initialConfig.slotDuration ?? 30,
+    bufferTime: initialConfig.bufferTime ?? 15,
+    maxAdvanceBooking: initialConfig.maxAdvanceBooking ?? 30,
+    minAdvanceBooking: initialConfig.minAdvanceBooking ?? 24,
+    availableDays: initialConfig.availableDays ?? ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    startTime: initialConfig.startTime ?? "09:00",
+    endTime: initialConfig.endTime ?? "17:00",
+    enableReminders: initialConfig.enableReminders ?? true,
+    reminderTime: initialConfig.reminderTime ?? 24,
+    confirmationMessage: initialConfig.confirmationMessage ?? "Your appointment has been booked for {{date}} at {{time}}.",
+    reminderMessage: initialConfig.reminderMessage ?? "Reminder: You have an appointment tomorrow at {{time}}.",
   })
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Load saved booking settings when component mounts
+  // Load saved booking settings when component mounts if no initial config provided
   useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const response = await fetch("/api/agent/config")
-        if (response.ok) {
-          const data = await response.json()
-          if (data.config?.booking) {
-            setSettings(data.config.booking)
+    if (!initialConfig || Object.keys(initialConfig).length === 0) {
+      const loadSettings = async () => {
+        try {
+          const response = await fetch("/api/agent/config")
+          if (response.ok) {
+            const data = await response.json()
+            if (data.config?.booking) {
+              setSettings(data.config.booking)
+            }
           }
+        } catch (error) {
+          console.error("Error loading booking settings:", error)
+        } finally {
+          setIsLoading(false)
         }
-      } catch (error) {
-        console.error("Error loading booking settings:", error)
-      } finally {
-        setIsLoading(false)
       }
-    }
 
-    loadSettings()
+      loadSettings()
+    }
   }, [])
   const [isSaving, setIsSaving] = useState(false)
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const response = await fetch("/api/agent/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section: "booking", data: settings }),
-      })
+      if (agentId) {
+        // Get current agent to preserve other config sections
+        const agentResponse = await fetch(`/api/agents/${agentId}`);
+        if (!agentResponse.ok) {
+          throw new Error("Failed to fetch agent details");
+        }
+        const agentData = await agentResponse.json();
 
-      if (response.ok) {
-        toast.success("Booking settings saved successfully!")
+        // Update the specific agent
+        const response = await fetch(`/api/agents/${agentId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: agentData.agent.name,
+            config: { ...agentData.agent.config, booking: settings },
+            is_default: agentData.agent.is_default
+          }),
+        })
+
+        if (response.ok) {
+          toast.success("Booking settings saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate(settings);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save booking settings:", errorText);
+          toast.error("Failed to save booking settings. Please try again.");
+        }
       } else {
-        const errorText = await response.text();
-        console.error("Failed to save booking settings:", errorText);
-        toast.error("Failed to save booking settings. Please try again.");
+        // Use the old endpoint for backward compatibility
+        const response = await fetch("/api/agent/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ section: "booking", data: settings }),
+        })
+
+        if (response.ok) {
+          toast.success("Booking settings saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate(settings);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save booking settings:", errorText);
+          toast.error("Failed to save booking settings. Please try again.");
+        }
       }
     } catch (error) {
       console.error("Error saving booking settings:", error);

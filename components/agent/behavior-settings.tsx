@@ -18,58 +18,97 @@ import {
   Timer,
 } from "lucide-react"
 
-export function BehaviorSettings() {
+export function BehaviorSettings({ agentId, initialConfig = {}, onUpdate }: { agentId?: string; initialConfig?: any; onUpdate?: (updatedConfig: any) => void }) {
   const [settings, setSettings] = useState({
-    enableAutoReplies: true,
-    askContactDetails: true,
-    enableBooking: false,
-    enablePaymentCollection: false,
-    enableSentimentDetection: true,
-    responseDelay: 1,
-    maxResponseLength: 300,
-    enableTypingIndicator: true,
-    enableReadReceipts: true,
-    enableQuickReplies: true,
+    enableAutoReplies: initialConfig.enableAutoReplies ?? true,
+    askContactDetails: initialConfig.askContactDetails ?? true,
+    enableBooking: initialConfig.enableBooking ?? false,
+    enablePaymentCollection: initialConfig.enablePaymentCollection ?? false,
+    enableSentimentDetection: initialConfig.enableSentimentDetection ?? true,
+    responseDelay: initialConfig.responseDelay ?? 1,
+    maxResponseLength: initialConfig.maxResponseLength ?? 300,
+    enableTypingIndicator: initialConfig.enableTypingIndicator ?? true,
+    enableReadReceipts: initialConfig.enableReadReceipts ?? true,
+    enableQuickReplies: initialConfig.enableQuickReplies ?? true,
   })
   const [isSaving, setIsSaving] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Load saved behavior settings when component mounts
+  // Load saved behavior settings when component mounts if no initial config provided
   useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const response = await fetch("/api/agent/config")
-        if (response.ok) {
-          const data = await response.json()
-          if (data.config?.behavior) {
-            setSettings(data.config.behavior)
+    if (!initialConfig || Object.keys(initialConfig).length === 0) {
+      const loadSettings = async () => {
+        try {
+          const response = await fetch("/api/agent/config")
+          if (response.ok) {
+            const data = await response.json()
+            if (data.config?.behavior) {
+              setSettings(data.config.behavior)
+            }
           }
+        } catch (error) {
+          console.error("Error loading behavior settings:", error)
+        } finally {
+          setIsLoading(false)
         }
-      } catch (error) {
-        console.error("Error loading behavior settings:", error)
-      } finally {
-        setIsLoading(false)
       }
-    }
 
-    loadSettings()
+      loadSettings()
+    }
   }, [])
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const response = await fetch("/api/agent/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section: "behavior", data: settings }),
-      })
+      if (agentId) {
+        // Get current agent to preserve other config sections
+        const agentResponse = await fetch(`/api/agents/${agentId}`);
+        if (!agentResponse.ok) {
+          throw new Error("Failed to fetch agent details");
+        }
+        const agentData = await agentResponse.json();
 
-      if (response.ok) {
-        toast.success("Behavior settings saved successfully!")
+        // Update the specific agent
+        const response = await fetch(`/api/agents/${agentId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: agentData.agent.name,
+            config: { ...agentData.agent.config, behavior: settings },
+            is_default: agentData.agent.is_default
+          }),
+        })
+
+        if (response.ok) {
+          toast.success("Behavior settings saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate(settings);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save behavior settings:", errorText);
+          toast.error("Failed to save behavior settings. Please try again.");
+        }
       } else {
-        const errorText = await response.text();
-        console.error("Failed to save behavior settings:", errorText);
-        toast.error("Failed to save behavior settings. Please try again.");
+        // Use the old endpoint for backward compatibility
+        const response = await fetch("/api/agent/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ section: "behavior", data: settings }),
+        })
+
+        if (response.ok) {
+          toast.success("Behavior settings saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate(settings);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save behavior settings:", errorText);
+          toast.error("Failed to save behavior settings. Please try again.");
+        }
       }
     } catch (error) {
       console.error("Error saving behavior settings:", error);

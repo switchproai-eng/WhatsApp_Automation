@@ -101,20 +101,20 @@ export async function checkBusinessHours(
   timezone: string = "UTC"
 ): Promise<boolean> {
   try {
-    // Query agent configuration
+    // Query default agent configuration
     const { sql } = await import("@/lib/db");
-    const configResult = await sql`
-      SELECT config FROM agent_configurations
-      WHERE tenant_id = ${tenantId}
+    const agentResult = await sql`
+      SELECT config FROM ai_agents
+      WHERE tenant_id = ${tenantId} AND is_default = true
       LIMIT 1
     `;
 
-    if (configResult.length === 0) {
+    if (agentResult.length === 0) {
       // No config found, assume 24/7
       return true;
     }
 
-    const config = configResult[0].config as any;
+    const config = agentResult[0].config as any;
     const profile = config.profile || {};
 
     // If no business hours set, assume always open

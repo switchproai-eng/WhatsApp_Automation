@@ -157,25 +157,61 @@ export default function AgentEditorPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-6">
-          <AgentProfile agentId={agent.id} initialConfig={agent.config.profile || {}} />
+          <AgentProfile
+            agentId={agent.id}
+            initialConfig={agent.config.profile || {}}
+            onUpdate={(updatedConfig) => {
+              // If the profile name has changed, update the agent's main name as well
+              const newAgentName = updatedConfig.name || agent.name;
+              setAgent({
+                ...agent,
+                name: newAgentName,
+                config: {...agent.config, profile: updatedConfig}
+              });
+            }}
+          />
         </TabsContent>
         <TabsContent value="prompt" className="mt-6">
-          <AIPromptBuilder agentId={agent.id} initialConfig={agent.config.prompt || {}} />
+          <AIPromptBuilder
+            agentId={agent.id}
+            initialConfig={agent.config.prompt || {}}
+            onUpdate={(updatedConfig) => setAgent({...agent, config: {...agent.config, prompt: updatedConfig}})}
+          />
         </TabsContent>
         <TabsContent value="knowledge" className="mt-6">
-          <KnowledgeBase agentId={agent.id} initialConfig={agent.config.knowledge || {}} />
+          <KnowledgeBase
+            agentId={agent.id}
+            initialConfig={agent.config.knowledge || {}}
+            onUpdate={(updatedConfig) => setAgent({...agent, config: {...agent.config, knowledge: updatedConfig}})}
+          />
         </TabsContent>
         <TabsContent value="behavior" className="mt-6">
-          <BehaviorSettings agentId={agent.id} initialConfig={agent.config.behavior || {}} />
+          <BehaviorSettings
+            agentId={agent.id}
+            initialConfig={agent.config.behavior || {}}
+            onUpdate={(updatedConfig) => setAgent({...agent, config: {...agent.config, behavior: updatedConfig}})}
+          />
         </TabsContent>
         <TabsContent value="booking" className="mt-6">
-          <BookingSettings agentId={agent.id} initialConfig={agent.config.booking || {}} />
+          <BookingSettings
+            agentId={agent.id}
+            initialConfig={agent.config.booking || {}}
+            onUpdate={(updatedConfig) => setAgent({...agent, config: {...agent.config, booking: updatedConfig}})}
+          />
         </TabsContent>
         <TabsContent value="escalation" className="mt-6">
-          <EscalationRules agentId={agent.id} initialConfig={agent.config.escalation || {}} />
+          <EscalationRules
+            agentId={agent.id}
+            initialConfig={agent.config.escalation || {}}
+            onUpdate={(updatedConfig) => setAgent({...agent, config: {...agent.config, escalation: updatedConfig}})}
+          />
         </TabsContent>
         <TabsContent value="templates" className="mt-6">
-          <ResponseTemplates agentId={agent.id} initialConfig={agent.config.templates || {}} />
+          <ResponseTemplates
+            agentId={agent.id}
+            initialConfig={agent.config.templates || {}}
+            onUpdate={(updatedConfig) => setAgent({...agent, config: {...agent.config, templates: updatedConfig}})}
+          />
         </TabsContent>
       </Tabs>
     </div>

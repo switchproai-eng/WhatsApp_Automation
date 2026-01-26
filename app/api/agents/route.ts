@@ -31,30 +31,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name, config = {} } = await request.json();
+    const { name, config = {}, is_default = false } = await request.json();
     if (!name) {
       return NextResponse.json({ error: 'Name required' }, { status: 400 });
     }
 
-    const sql = neon(process.env.DATABASE_URL!);
-    const newAgent = await sql`
+    const newAgent = await queryOne<any>(`
       INSERT INTO ai_agents (tenant_id, name, config, is_default)
-      VALUES (${session.tenantId}, ${name}, ${config}::jsonb, false)
-      RETURNING id
-    `.then(r => r[0]);
+      VALUES ($1, $2, $3::jsonb, $4)
+      RETURNING id, name, config, is_default, created_at, updated_at
+    `, [session.tenantId, name, config, is_default]);
 
-    // Unset other defaults if this is default (but default false by now)
-    if (config.is_default) {
-      await sql`UPDATE ai_agents SET is_default = false WHERE tenant_id = ${session.tenantId} AND id != ${newAgent.id};`;
+    if (is_default) {
+      await query<any>(`
+        UPDATE ai_agents SET is_default = false WHERE tenant_id = $1 AND id != $2
+      `, [session.tenantId, newAgent.id]);
+      await query<any>(`
+        UPDATE tenants SET default_agent_id = $1 WHERE id = $2
+      `, [newAgent.id, session.tenantId]);
     }
 
-    const agent = await queryOne<any>(`
-      SELECT id, name, config, is_default, created_at, updated_at
-      FROM ai_agents
-      WHERE id = $1 AND tenant_id = $2
-    `, [newAgent.id, session.tenantId]);
-
-    return NextResponse.json({ agent }, { status: 201 });
+    return NextResponse.json({ agent: newAgent }, { status: 201 });
   } catch (error) {
     console.error('Agents POST error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

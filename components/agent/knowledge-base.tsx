@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
 import {
   HelpCircle,
   Package,
@@ -44,31 +45,35 @@ interface Document {
   uploadedAt: string
 }
 
-export function KnowledgeBase() {
-  const [faqs, setFaqs] = useState<FAQ[]>([
-    {
-      id: "1",
-      question: "What are your business hours?",
-      answer: "We're open Monday to Friday, 9 AM to 6 PM.",
-    },
-    {
-      id: "2",
-      question: "How can I track my order?",
-      answer: "You can track your order using the tracking link sent to your email.",
-    },
-  ])
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: "1",
-      name: "Basic Plan",
-      description: "Perfect for small businesses",
-      price: "$29/mo",
-      features: ["500 messages/mo", "1 agent", "Email support"],
-    },
-  ])
-  const [documents, setDocuments] = useState<Document[]>([])
-  const [policies, setPolicies] = useState("")
-  const [customNotes, setCustomNotes] = useState("")
+export function KnowledgeBase({ agentId, initialConfig = {}, onUpdate }: { agentId?: string; initialConfig?: any; onUpdate?: (updatedConfig: any) => void }) {
+  const [faqs, setFaqs] = useState<FAQ[]>(
+    initialConfig.faqs || [
+      {
+        id: "1",
+        question: "What are your business hours?",
+        answer: "We're open Monday to Friday, 9 AM to 6 PM.",
+      },
+      {
+        id: "2",
+        question: "How can I track my order?",
+        answer: "You can track your order using the tracking link sent to your email.",
+      },
+    ]
+  )
+  const [products, setProducts] = useState<Product[]>(
+    initialConfig.products || [
+      {
+        id: "1",
+        name: "Basic Plan",
+        description: "Perfect for small businesses",
+        price: "$29/mo",
+        features: ["500 messages/mo", "1 agent", "Email support"],
+      },
+    ]
+  )
+  const [documents, setDocuments] = useState<Document[]>(initialConfig.documents || [])
+  const [policies, setPolicies] = useState(initialConfig.policies || "")
+  const [customNotes, setCustomNotes] = useState(initialConfig.customNotes || "")
   const [editingFaq, setEditingFaq] = useState<string | null>(null)
   const [newFaq, setNewFaq] = useState({ question: "", answer: "" })
   const [showAddFaq, setShowAddFaq] = useState(false)
@@ -138,14 +143,65 @@ export function KnowledgeBase() {
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      await fetch("/api/agent/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          section: "knowledge",
-          data: { faqs, products, documents, policies, customNotes },
-        }),
-      })
+      if (agentId) {
+        // Get current agent to preserve other config sections
+        const agentResponse = await fetch(`/api/agents/${agentId}`);
+        if (!agentResponse.ok) {
+          throw new Error("Failed to fetch agent details");
+        }
+        const agentData = await agentResponse.json();
+
+        // Update the specific agent
+        const response = await fetch(`/api/agents/${agentId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: agentData.agent.name,
+            config: {
+              ...agentData.agent.config,
+              knowledge: { faqs, products, documents, policies, customNotes }
+            },
+            is_default: agentData.agent.is_default
+          }),
+        })
+
+        if (response.ok) {
+          toast.success("Knowledge base saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate({ faqs, products, documents, policies, customNotes });
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save knowledge base:", errorText);
+          toast.error("Failed to save knowledge base. Please try again.");
+        }
+      } else {
+        // Use the old endpoint for backward compatibility
+        const response = await fetch("/api/agent/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            section: "knowledge",
+            data: { faqs, products, documents, policies, customNotes },
+          }),
+        })
+
+        if (response.ok) {
+          toast.success("Knowledge base saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate({ faqs, products, documents, policies, customNotes });
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save knowledge base:", errorText);
+          toast.error("Failed to save knowledge base. Please try again.");
+        }
+      }
+    } catch (error) {
+      console.error("Error saving knowledge base:", error);
+      toast.error("An error occurred while saving the knowledge base.");
     } finally {
       setIsSaving(false)
     }

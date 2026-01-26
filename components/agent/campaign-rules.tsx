@@ -16,31 +16,81 @@ import {
 } from "@/components/ui/select"
 import { Megaphone, Moon, Gauge, FileText, Save } from "lucide-react"
 
-export function CampaignRules() {
+import { toast } from "sonner"
+
+export function CampaignRules({ agentId, initialConfig = {}, onUpdate }: { agentId?: string; initialConfig?: any; onUpdate?: (updatedConfig: any) => void }) {
   const [settings, setSettings] = useState({
-    enableQuietHours: true,
-    quietHoursStart: "21:00",
-    quietHoursEnd: "09:00",
-    respectTimezone: true,
-    messagesPerMinute: 20,
-    messagesPerHour: 200,
-    messagesPerDay: 1000,
-    enableRateLimiting: true,
-    allowedTemplateTypes: ["marketing", "utility", "authentication"],
-    requireOptIn: true,
-    optOutKeywords: ["stop", "unsubscribe", "opt out"],
-    autoRemoveOptedOut: true,
+    enableQuietHours: initialConfig.enableQuietHours ?? true,
+    quietHoursStart: initialConfig.quietHoursStart ?? "21:00",
+    quietHoursEnd: initialConfig.quietHoursEnd ?? "09:00",
+    respectTimezone: initialConfig.respectTimezone ?? true,
+    messagesPerMinute: initialConfig.messagesPerMinute ?? 20,
+    messagesPerHour: initialConfig.messagesPerHour ?? 200,
+    messagesPerDay: initialConfig.messagesPerDay ?? 1000,
+    enableRateLimiting: initialConfig.enableRateLimiting ?? true,
+    allowedTemplateTypes: initialConfig.allowedTemplateTypes ?? ["marketing", "utility", "authentication"],
+    requireOptIn: initialConfig.requireOptIn ?? true,
+    optOutKeywords: initialConfig.optOutKeywords ?? ["stop", "unsubscribe", "opt out"],
+    autoRemoveOptedOut: initialConfig.autoRemoveOptedOut ?? true,
   })
   const [isSaving, setIsSaving] = useState(false)
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      await fetch("/api/agent/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section: "campaigns", data: settings }),
-      })
+      if (agentId) {
+        // Get current agent to preserve other config sections
+        const agentResponse = await fetch(`/api/agents/${agentId}`);
+        if (!agentResponse.ok) {
+          throw new Error("Failed to fetch agent details");
+        }
+        const agentData = await agentResponse.json();
+
+        // Update the specific agent
+        const response = await fetch(`/api/agents/${agentId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: agentData.agent.name,
+            config: { ...agentData.agent.config, campaigns: settings },
+            is_default: agentData.agent.is_default
+          }),
+        })
+
+        if (response.ok) {
+          toast.success("Campaign rules saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate(settings);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save campaign rules:", errorText);
+          toast.error("Failed to save campaign rules. Please try again.");
+        }
+      } else {
+        // Use the old endpoint for backward compatibility
+        const response = await fetch("/api/agent/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ section: "campaigns", data: settings }),
+        })
+
+        if (response.ok) {
+          toast.success("Campaign rules saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate(settings);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save campaign rules:", errorText);
+          toast.error("Failed to save campaign rules. Please try again.");
+        }
+      }
+    } catch (error) {
+      console.error("Error saving campaign rules:", error);
+      toast.error("An error occurred while saving the campaign rules.");
     } finally {
       setIsSaving(false)
     }

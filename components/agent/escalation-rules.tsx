@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
 import {
   Select,
   SelectContent,
@@ -17,19 +18,18 @@ import {
 } from "@/components/ui/select"
 import { AlertTriangle, Target, MessageSquare, Heart, Clock, Plus, X, Save } from "lucide-react"
 
-export function EscalationRules() {
+export function EscalationRules({ agentId, initialConfig = {}, onUpdate }: { agentId?: string; initialConfig?: any; onUpdate?: (updatedConfig: any) => void }) {
   const [rules, setRules] = useState({
-    confidenceThreshold: 70,
-    enableConfidenceEscalation: true,
-    keywordTriggers: ["urgent", "speak to human", "manager", "complaint", "cancel"],
-    enableKeywordEscalation: true,
-    sentimentTriggers: ["angry", "frustrated"],
-    enableSentimentEscalation: true,
-    maxAIReplies: 5,
-    enableReplyLimitEscalation: true,
-    afterHoursRouting: "queue",
-    escalationMessage:
-      "I'm connecting you with a human agent who can better assist you. Please hold on.",
+    confidenceThreshold: initialConfig.confidenceThreshold ?? 70,
+    enableConfidenceEscalation: initialConfig.enableConfidenceEscalation ?? true,
+    keywordTriggers: initialConfig.keywordTriggers ?? ["urgent", "speak to human", "manager", "complaint", "cancel"],
+    enableKeywordEscalation: initialConfig.enableKeywordEscalation ?? true,
+    sentimentTriggers: initialConfig.sentimentTriggers ?? ["angry", "frustrated"],
+    enableSentimentEscalation: initialConfig.enableSentimentEscalation ?? true,
+    maxAIReplies: initialConfig.maxAIReplies ?? 5,
+    enableReplyLimitEscalation: initialConfig.enableReplyLimitEscalation ?? true,
+    afterHoursRouting: initialConfig.afterHoursRouting ?? "queue",
+    escalationMessage: initialConfig.escalationMessage ?? "I'm connecting you with a human agent who can better assist you. Please hold on.",
   })
   const [newKeyword, setNewKeyword] = useState("")
   const [isSaving, setIsSaving] = useState(false)
@@ -63,11 +63,59 @@ export function EscalationRules() {
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      await fetch("/api/agent/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section: "escalation", data: rules }),
-      })
+      if (agentId) {
+        // Get current agent to preserve other config sections
+        const agentResponse = await fetch(`/api/agents/${agentId}`);
+        if (!agentResponse.ok) {
+          throw new Error("Failed to fetch agent details");
+        }
+        const agentData = await agentResponse.json();
+
+        // Update the specific agent
+        const response = await fetch(`/api/agents/${agentId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: agentData.agent.name,
+            config: { ...agentData.agent.config, escalation: rules },
+            is_default: agentData.agent.is_default
+          }),
+        })
+
+        if (response.ok) {
+          toast.success("Escalation rules saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate(rules);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save escalation rules:", errorText);
+          toast.error("Failed to save escalation rules. Please try again.");
+        }
+      } else {
+        // Use the old endpoint for backward compatibility
+        const response = await fetch("/api/agent/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ section: "escalation", data: rules }),
+        })
+
+        if (response.ok) {
+          toast.success("Escalation rules saved successfully!")
+          // Update parent component's state
+          if (onUpdate) {
+            onUpdate(rules);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save escalation rules:", errorText);
+          toast.error("Failed to save escalation rules. Please try again.");
+        }
+      }
+    } catch (error) {
+      console.error("Error saving escalation rules:", error);
+      toast.error("An error occurred while saving the escalation rules.");
     } finally {
       setIsSaving(false)
     }

@@ -10,14 +10,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const config = await queryOne(
-      `SELECT config FROM agent_configurations WHERE tenant_id = $1`,
+    const agent = await queryOne(
+      `SELECT config FROM ai_agents WHERE tenant_id = $1 AND is_default = true`,
       [session.tenantId]
     );
 
     return NextResponse.json({
       success: true,
-      config: config?.config || null,
+      config: agent?.config || null,
       hasOpenAIKey: !!process.env.OPENAI_API_KEY,
       webhookUrl: process.env.WEBHOOK_URL || "Not configured",
       verifyToken: !!process.env.WHATSAPP_VERIFY_TOKEN,
