@@ -1,5 +1,5 @@
 import React from "react"
-import { getCurrentUser, getCurrentTenant } from "../lib/auth"
+import { getCurrentUser, getCurrentTenant } from "../../lib/auth"
 import { redirect } from "next/navigation"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
