@@ -1,5 +1,5 @@
 import { LoginForm } from "@/components/auth/login-form"
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser } from "../../../lib/auth"
 import { redirect } from "next/navigation"
 import { MessageSquare } from "lucide-react"
 import Link from "next/link"

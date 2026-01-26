@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { signIn, signUp } from "@/lib/auth"
+import { signIn, signUp } from "../lib/auth"
 
 export async function loginAction(formData: FormData) {
   const email = formData.get("email") as string

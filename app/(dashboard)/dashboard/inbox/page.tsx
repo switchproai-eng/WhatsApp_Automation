@@ -1,7 +1,7 @@
-import { getCurrentTenant } from "@/lib/auth"
+import { getCurrentTenant } from "../../../../lib/auth"
 import { redirect } from "next/navigation"
 import { InboxLayout } from "@/components/inbox/inbox-layout"
-import { query } from "@/lib/db"
+import { query } from "../../../../lib/db"
 
 async function getInboxData(tenantId: string) {
   const conversations = await query<{

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { verifySession } from "/lib/auth";
-import { query, queryOne } from "/lib/db";
+import { verifySession } from "../../../../lib/auth";
+import { query, queryOne } from "../../../../lib/db";
 
 // Test endpoint to verify agent configuration
 export async function GET(request: Request) {

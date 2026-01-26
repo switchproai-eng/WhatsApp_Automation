@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySession } from '@/lib/auth';
-import { query, queryOne } from '@/lib/db';
+import { verifySession } from '../../../lib/auth';
+import { query, queryOne } from '../../../lib/db';
 import { neon } from '@neondatabase/serverless';
 
 export async function GET(request: NextRequest) {

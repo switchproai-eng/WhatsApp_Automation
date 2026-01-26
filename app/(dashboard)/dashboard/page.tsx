@@ -1,10 +1,10 @@
-import { getCurrentUser, getCurrentTenant } from "@/lib/auth"
+import { getCurrentUser, getCurrentTenant } from "../../../lib/auth"
 import { redirect } from "next/navigation"
 import { DashboardStats } from "@/components/dashboard/stats"
 import { RecentConversations } from "@/components/dashboard/recent-conversations"
 import { QuickActions } from "@/components/dashboard/quick-actions"
 import { AnalyticsChart } from "@/components/dashboard/analytics-chart"
-import { query } from "@/lib/db"
+import { query } from "../../../lib/db"
 
 async function getDashboardData(tenantId: string) {
   const [

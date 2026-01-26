@@ -1,7 +1,7 @@
-import { getCurrentTenant } from "@/lib/auth"
+import { getCurrentTenant } from "../../../../lib/auth"
 import { redirect } from "next/navigation"
 import { FlowsList } from "@/components/flows/flows-list"
-import { query } from "@/lib/db"
+import { query } from "../../../../lib/db"
 
 async function getFlowsData(tenantId: string) {
   const flows = await query<{

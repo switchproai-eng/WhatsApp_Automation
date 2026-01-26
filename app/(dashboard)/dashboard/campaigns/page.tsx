@@ -1,7 +1,7 @@
-import { getCurrentTenant } from "@/lib/auth"
+import { getCurrentTenant } from "../../../../lib/auth"
 import { redirect } from "next/navigation"
 import { CampaignsList } from "@/components/campaigns/campaigns-list"
-import { query } from "@/lib/db"
+import { query } from "../../../../lib/db"
 
 async function getCampaignsData(tenantId: string) {
   const campaigns = await query<{

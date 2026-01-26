@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sql } from "@/lib/db";
-import { verifySession } from "@/lib/auth";
-import { WhatsAppService } from "@/lib/whatsapp";
+import { sql } from "../../../lib/db";
+import { verifySession } from "../../../lib/auth";
+import { WhatsAppService } from "../../../lib/whatsapp";
 
 export async function POST(request: NextRequest) {
   try {

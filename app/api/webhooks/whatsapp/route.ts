@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sql } from "@/lib/db";
-import { generateAIResponse, shouldUseAIResponse, checkBusinessHours } from "@/lib/ai";
-import { WhatsAppService } from "@/lib/whatsapp";
+import { sql } from "../../../../lib/db";
+import { generateAIResponse, shouldUseAIResponse, checkBusinessHours } from "../../../../lib/ai";
+import { WhatsAppService } from "../../../../lib/whatsapp";
 
 // Verify webhook (GET request from Meta)
 export async function GET(request: NextRequest) {

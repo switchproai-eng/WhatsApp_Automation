@@ -1,7 +1,7 @@
-import { getCurrentTenant } from "@/lib/auth"
+import { getCurrentTenant } from "../../../../lib/auth"
 import { redirect } from "next/navigation"
 import { TemplatesList } from "@/components/templates/templates-list"
-import { query } from "@/lib/db"
+import { query } from "../../../../lib/db"
 
 async function getTemplatesData(tenantId: string) {
   const templates = await query<{

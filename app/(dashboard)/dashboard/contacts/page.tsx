@@ -1,8 +1,8 @@
-import { getCurrentTenant } from "@/lib/auth"
+import { getCurrentTenant } from "../../../../lib/auth"
 import { redirect } from "next/navigation"
 import { ContactsTable } from "@/components/contacts/contacts-table"
 import { ContactsHeader } from "@/components/contacts/contacts-header"
-import { query } from "@/lib/db"
+import { query } from "../../../../lib/db"
 
 async function getContactsData(tenantId: string) {
   const contacts = await query<{
