@@ -30,22 +30,29 @@ export interface AIConfig {
 export async function generateAIResponse(
   message: string,
   conversationHistory: { role: "user" | "assistant"; content: string }[],
-  config: AIConfig
+  config: any
 ): Promise<string> {
   try {
     const client = getOpenAIClient();
 
-    // Build system prompt
-    let systemPrompt = `You are ${config.agentName || "an AI assistant"}`;
+    // Build system prompt based on the new agent configuration structure
+    let systemPrompt = "";
 
-    if (config.agentRole) {
-      systemPrompt += `, ${config.agentRole}.`;
+    // Get profile information
+    const profile = config.profile || {};
+    const agentName = profile.name || "an AI assistant";
+    const businessDescription = profile.description || config.businessDescription;
+
+    systemPrompt += `You are ${agentName}, an AI customer service agent`;
+
+    if (profile.industry) {
+      systemPrompt += ` for a ${profile.industry} business.`;
     } else {
       systemPrompt += ".";
     }
 
-    if (config.businessDescription) {
-      systemPrompt += `\n\nBusiness Context: ${config.businessDescription}`;
+    if (businessDescription) {
+      systemPrompt += `\n\nBusiness Context: ${businessDescription}`;
     }
 
     // Add tone instruction
@@ -57,18 +64,43 @@ export async function generateAIResponse(
       empathetic: "Show understanding, care, and emotional intelligence.",
     };
 
-    if (config.tone && toneInstructions[config.tone]) {
-      systemPrompt += `\n\nTone: ${toneInstructions[config.tone]}`;
+    if (profile.tone && toneInstructions[profile.tone]) {
+      systemPrompt += `\n\nTone: ${toneInstructions[profile.tone]}`;
     }
 
     // Add language instruction if not English
-    if (config.language && config.language !== "en") {
-      systemPrompt += `\n\nIMPORTANT: Respond in the following language code: ${config.language}`;
+    if (profile.language && profile.language !== "en") {
+      systemPrompt += `\n\nIMPORTANT: Respond in the following language code: ${profile.language}`;
     }
 
-    // Add capability-specific instructions
-    if (config.capabilities?.autoRespond) {
-      systemPrompt += "\\n\\nYou can automatically respond to customer inquiries.";
+    // Add AI prompt builder configuration
+    const promptConfig = config.prompt || {};
+    if (promptConfig.goals && promptConfig.goals.length > 0) {
+      systemPrompt += `\n\nPrimary Goals: ${promptConfig.goals.join(", ")}`;
+    }
+
+    if (promptConfig.constraints && promptConfig.constraints.length > 0) {
+      systemPrompt += `\n\nConstraints: ${promptConfig.constraints.join(", ")}`;
+    }
+
+    if (promptConfig.customInstructions) {
+      systemPrompt += `\n\nAdditional Instructions: ${promptConfig.customInstructions}`;
+    }
+
+    // Add behavior settings
+    const behavior = config.behavior || {};
+    if (behavior.askContactDetails) {
+      systemPrompt += "\n\nAlways ask for the customer's name and email when appropriate.";
+    }
+
+    // Add knowledge base information
+    const knowledge = config.knowledge || {};
+    if (knowledge.faqs && knowledge.faqs.length > 0) {
+      systemPrompt += `\n\nFAQs: ${knowledge.faqs.map((faq: any) => `"${faq.question}": "${faq.answer}"`).join("; ")}`;
+    }
+
+    if (knowledge.policies) {
+      systemPrompt += `\n\nCompany Policies: ${knowledge.policies}`;
     }
 
     // Build messages array
@@ -167,9 +199,14 @@ export function shouldUseAIResponse(config: any): boolean {
       return false;
     }
 
-    // First check response settings if available
+    // First check response settings if available (this is the new structure from agent components)
     if (config.response && typeof config.response.autoRespond !== 'undefined') {
       return config.response.autoRespond === true;
+    }
+
+    // Check behavior settings (another possible location)
+    if (config.behavior && typeof config.behavior.enableAutoReplies !== 'undefined') {
+      return config.behavior.enableAutoReplies === true;
     }
 
     // Then check capabilities if response settings not available

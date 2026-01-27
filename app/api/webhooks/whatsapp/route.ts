@@ -259,17 +259,28 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
 
       const agentConfig = agentResult.length > 0 ? (agentResult[0] as { config: any }).config : null;
 
+      // Check if AI auto-respond is enabled using the proper function
+      const shouldUseAI = shouldUseAIResponse(agentConfig);
+
       // Check if AI auto-respond is enabled and within business hours
       const isBusinessHours = await checkBusinessHours(tenantId, agentConfig?.profile?.timezone);
-
-      // Check if auto-respond is enabled in response settings
-      const autoRespondEnabled = agentConfig?.response?.autoRespond ?? true; // Default to true if not set
 
       // Check if business hours restriction is enabled
       const businessHoursOnly = agentConfig?.response?.businessHoursOnly ?? false; // Default to false if not set
 
+      // Check if AI is enabled for this specific conversation
+      const conversationResult = await query(`
+        SELECT is_ai_enabled FROM conversations
+        WHERE id = $1
+        LIMIT 1
+      `, [conversationId]);
+
+      const isAIEnabledForConversation = conversationResult.length > 0 ?
+        (conversationResult[0] as { is_ai_enabled: boolean }).is_ai_enabled : true;
+
       // Determine if we should auto-respond based on settings
-      const shouldAutoRespond = autoRespondEnabled &&
+      const shouldAutoRespond = shouldUseAI &&
+        isAIEnabledForConversation &&
         (!businessHoursOnly || isBusinessHours) &&
         message.type === "text" &&
         content;
