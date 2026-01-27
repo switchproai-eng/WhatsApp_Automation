@@ -113,8 +113,9 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
       return;
     }
 
-    const tenantId = accountResult[0].tenant_id;
-    const whatsappAccountId = accountResult[0].whatsapp_account_id;
+    const accountRow = accountResult[0] as { tenant_id: string; whatsapp_account_id: string; access_token: string };
+    const tenantId = accountRow.tenant_id;
+    const whatsappAccountId = accountRow.whatsapp_account_id;
     const senderPhone = message.from;
     const senderName = contact?.profile?.name || "Unknown";
 
@@ -134,9 +135,9 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
         VALUES ($1, $2, $3, 'whatsapp')
         RETURNING id
       `, [tenantId, senderPhone, senderName]);
-      contactId = newContact[0].id;
+      contactId = (newContact[0] as { id: string }).id;
     } else {
-      contactId = contactResult[0].id;
+      contactId = (contactResult[0] as { id: string }).id;
     }
 
     // Find or create conversation
@@ -156,9 +157,9 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
         VALUES ($1, $2, $3, 'open')
         RETURNING id
       `, [tenantId, contactId, whatsappAccountId]);
-      conversationId = newConversation[0].id;
+      conversationId = (newConversation[0] as { id: string }).id;
     } else {
-      conversationId = conversationResult[0].id;
+      conversationId = (conversationResult[0] as { id: string }).id;
       // Reopen conversation if closed
       await query(`
         UPDATE conversations
@@ -179,7 +180,7 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
       case "image":
         content = message.image?.caption || "[Image]";
         messageType = "image";
-        // Media URL would need to be fetched from Meta API
+        // Media URL
         break;
       case "document":
         content = `[Document: ${message.document?.filename}]`;
@@ -256,7 +257,7 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
         LIMIT 1
       `, [tenantId]);
 
-      const agentConfig = agentResult.length > 0 ? agentResult[0].config : null;
+      const agentConfig = agentResult.length > 0 ? (agentResult[0] as { config: any }).config : null;
 
       // Check if AI auto-respond is enabled and within business hours
       const isBusinessHours = await checkBusinessHours(tenantId, agentConfig?.profile?.timezone);
@@ -285,7 +286,7 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
           LIMIT 5
         `, [conversationId]);
 
-        const conversationHistory = historyResult
+        const conversationHistory: { role: "assistant" | "user"; content: string }[] = historyResult
           .reverse()
           .map((msg: any) => ({
             role: msg.direction === "outbound" ? "assistant" : "user",
@@ -301,7 +302,7 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
         // Send response via WhatsApp
         const whatsappService = new WhatsAppService({
           phoneNumberId,
-          accessToken: accountResult[0].access_token,
+          accessToken: accountRow.access_token,
         });
 
         await whatsappService.sendTextMessage({

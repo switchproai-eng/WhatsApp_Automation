@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     updated_at: string
   }>(
     `SELECT id, tenant_id, name, config, is_default, updated_at
-     FROM ai_assistants
+     FROM ai_agents
      WHERE tenant_id = $1 AND is_default = true`,
     [session.tenantId]
   )
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     config: Record<string, unknown>
     name: string
   }>(
-    `SELECT id, config, name FROM ai_assistants WHERE tenant_id = $1 AND is_default = true`,
+    `SELECT id, config, name FROM ai_agents WHERE tenant_id = $1 AND is_default = true`,
     [session.tenantId]
   )
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   if (existing) {
     // Update existing agent config
     await query(
-      `UPDATE ai_assistants
+      `UPDATE ai_agents
        SET config = $1, updated_at = NOW()
        WHERE id = $2`,
       [JSON.stringify(newConfig), existing.id]
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     // Create new default agent with the config
     const agentName = "Default AI Agent";
     await query(
-      `INSERT INTO ai_assistants (tenant_id, name, config, is_default, created_at, updated_at)
+      `INSERT INTO ai_agents (tenant_id, name, config, is_default, created_at, updated_at)
        VALUES ($1, $2, $3, true, NOW(), NOW())
        ON CONFLICT (tenant_id, is_default) DO UPDATE SET
          config = $3,
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     // Commenting out for now as this column may not exist
     /*
     const newAgent = await queryOne<{ id: string }>(
-      `SELECT id FROM ai_assistants WHERE tenant_id = $1 AND is_default = true`,
+      `SELECT id FROM ai_agents WHERE tenant_id = $1 AND is_default = true`,
       [session.tenantId]
     );
 

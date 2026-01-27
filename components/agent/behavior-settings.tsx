@@ -61,6 +61,15 @@ export function BehaviorSettings({ agentId, initialConfig = {}, onUpdate }: { ag
     setIsSaving(true)
     try {
       if (agentId) {
+        // Check if this is a new agent being created (agentId is 'new')
+        if (agentId === 'new') {
+          // For new agents, we should trigger the parent's save mechanism instead
+          // The parent component handles creating new agents
+          toast.info("Please save the agent using the main save button above.");
+          setIsSaving(false);
+          return;
+        }
+
         // Get current agent to preserve other config sections
         const agentResponse = await fetch(`/api/agents/${agentId}`);
         if (!agentResponse.ok) {

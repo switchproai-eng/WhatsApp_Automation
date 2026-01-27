@@ -96,6 +96,15 @@ export function AgentProfile({ agentId, initialConfig = {}, onUpdate }: { agentI
     setIsSaving(true)
     try {
       if (agentId) {
+        // Check if this is a new agent being created (agentId is 'new')
+        if (agentId === 'new') {
+          // For new agents, we should trigger the parent's save mechanism instead
+          // The parent component handles creating new agents
+          toast.info("Please save the agent using the main save button above.");
+          setIsSaving(false);
+          return;
+        }
+
         // Get current agent to preserve is_default status
         const agentResponse = await fetch(`/api/agents/${agentId}`);
         if (!agentResponse.ok) {

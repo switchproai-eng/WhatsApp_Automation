@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const agents = await query<any[]>(`
       SELECT id, name, config, is_default, created_at, updated_at
-      FROM ai_assistants
+      FROM ai_agents
       WHERE tenant_id = $1
       ORDER BY created_at DESC
     `, [session.tenantId]);
@@ -37,14 +37,14 @@ export async function POST(request: NextRequest) {
     }
 
     const newAgent = await queryOne<any>(`
-      INSERT INTO ai_assistants (tenant_id, name, config, is_default)
+      INSERT INTO ai_agents (tenant_id, name, config, is_default)
       VALUES ($1, $2, $3::jsonb, $4)
       RETURNING id, name, config, is_default, created_at, updated_at
     `, [session.tenantId, name, config, is_default]);
 
     if (is_default) {
       await query<any>(`
-        UPDATE ai_assistants SET is_default = false WHERE tenant_id = $1 AND id != $2
+        UPDATE ai_agents SET is_default = false WHERE tenant_id = $1 AND id != $2
       `, [session.tenantId, newAgent.id]);
       // Note: tenants table might not have default_agent_id column, so commenting out for now
       // await query<any>(`
