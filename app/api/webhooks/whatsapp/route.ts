@@ -160,11 +160,11 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
       conversationId = (newConversation[0] as { id: string }).id;
     } else {
       conversationId = (conversationResult[0] as { id: string }).id;
-      // Reopen conversation if closed
+      // Reopen conversation if not already open
       await query(`
         UPDATE conversations
         SET status = 'open', updated_at = NOW()
-        WHERE id = $1
+        WHERE id = $1 AND status != 'open'
       `, [conversationId]);
     }
 

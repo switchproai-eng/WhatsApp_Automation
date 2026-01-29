@@ -127,11 +127,11 @@ export async function POST(request: NextRequest) {
 
     // Update conversation
     await sql`
-      UPDATE conversations 
-      SET 
+      UPDATE conversations
+      SET
         last_message = ${messageContent},
         last_message_at = NOW(),
-        status = 'open',
+        status = 'open'::text,
         updated_at = NOW()
       WHERE id = ${conversationId}
     `;

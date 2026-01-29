@@ -140,8 +140,8 @@ export async function POST(request: NextRequest) {
 
     // Check for existing open conversation
     const existingConversation = await sql`
-      SELECT id FROM conversations 
-      WHERE contact_id = ${contactId} 
+      SELECT id FROM conversations
+      WHERE contact_id = ${contactId}
       AND tenant_id = ${session.tenantId}
       AND status != 'resolved'
       LIMIT 1
@@ -154,10 +154,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create new conversation
+    // Create new conversation with valid status
     const result = await sql`
       INSERT INTO conversations (tenant_id, contact_id, channel, status, assigned_to)
-      VALUES (${session.tenantId}, ${contactId}, ${channel}, 'open', ${session.userId})
+      VALUES (${session.tenantId}, ${contactId}, ${channel}, 'open'::text, ${session.userId})
       RETURNING id, status, channel, created_at
     `;
 
