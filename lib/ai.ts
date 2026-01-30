@@ -142,12 +142,11 @@ export async function checkBusinessHours(
 ): Promise<boolean> {
   try {
     // Query default agent configuration
-    const { sql } = await import("@/lib/db");
-    const agentResult = await sql`
-      SELECT config FROM ai_agents
-      WHERE tenant_id = ${tenantId} AND is_default = true
-      LIMIT 1
-    `;
+    const { query } = await import("@/lib/db");
+    const agentResult = await query(
+      "SELECT config FROM ai_agents WHERE tenant_id = $1 AND is_default = true LIMIT 1",
+      [tenantId]
+    );
 
     if (agentResult.length === 0) {
       // No config found, assume 24/7
