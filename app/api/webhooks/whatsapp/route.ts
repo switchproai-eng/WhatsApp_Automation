@@ -250,25 +250,36 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
 
     // Check if we should auto-respond with AI
     try {
-      // First, try to find the default agent for this tenant
+      // Find the default agent for this tenant
+      // First try to find by is_default = true (fallback method)
       let agentResult = await query(`
-        SELECT aa.id, aa.config
-        FROM ai_agents aa
-        JOIN tenants t ON aa.id = t.default_agent_id
-        WHERE t.id = $1
+        SELECT id, name, config FROM ai_agents
+        WHERE tenant_id = $1 AND is_default = true
         LIMIT 1
       `, [tenantId]);
 
-      // If no agent found via tenant default, fall back to looking for is_default = true
+      // If no default agent found, try to find any agent for the tenant
       if (agentResult.length === 0) {
         agentResult = await query(`
-          SELECT id, config FROM ai_agents
-          WHERE tenant_id = $1 AND is_default = true
+          SELECT id, name, config FROM ai_agents
+          WHERE tenant_id = $1
+          ORDER BY created_at DESC
           LIMIT 1
         `, [tenantId]);
       }
 
-      const agentConfig = agentResult.length > 0 ? (agentResult[0] as { config: any }).config : null;
+      let agentConfig = agentResult.length > 0 ? (agentResult[0] as { config: any, name: string }).config : null;
+      const agentName = agentResult.length > 0 ? (agentResult[0] as { config: any, name: string }).name : null;
+
+      // Ensure the agent name is properly set in the config for AI responses
+      if (agentConfig && agentName) {
+        if (!agentConfig.profile) {
+          agentConfig.profile = {};
+        }
+        if (!agentConfig.profile.name) {
+          agentConfig.profile.name = agentName;
+        }
+      }
 
       // Check if AI auto-respond is enabled using the proper function
       const shouldUseAI = shouldUseAIResponse(agentConfig);

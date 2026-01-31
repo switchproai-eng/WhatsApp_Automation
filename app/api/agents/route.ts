@@ -36,11 +36,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name required' }, { status: 400 });
     }
 
+    // Ensure the profile name in config matches the agent name
+    let updatedConfig = { ...config };
+    if (!updatedConfig.profile) {
+      updatedConfig.profile = {};
+    }
+    updatedConfig.profile.name = name;
+
     const newAgent = await queryOne<any>(`
       INSERT INTO ai_agents (tenant_id, name, config, is_default)
       VALUES ($1, $2, $3::jsonb, $4)
       RETURNING id, name, config, is_default, created_at, updated_at
-    `, [session.tenantId, name, config, is_default]);
+    `, [session.tenantId, name, updatedConfig, is_default]);
 
     if (is_default) {
       await query<any>(`

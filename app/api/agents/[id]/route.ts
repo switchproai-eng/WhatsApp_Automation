@@ -38,6 +38,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { name, config = {}, is_default = false } = await request.json();
 
+    // Ensure the profile name in config matches the agent name
+    let updatedConfig = { ...config };
+    if (!updatedConfig.profile) {
+      updatedConfig.profile = {};
+    }
+    updatedConfig.profile.name = name;
+
     if (is_default) {
       // If setting as default, first unset all others
       await query<any>(`
@@ -49,7 +56,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     await query<any>(`
       UPDATE ai_agents SET name = $1, config = $2::jsonb, is_default = $3
       WHERE id = $4 AND tenant_id = $5
-    `, [name, config, is_default, id, session.tenantId]);
+    `, [name, updatedConfig, is_default, id, session.tenantId]);
 
     // Update tenant's default_agent_id if setting as default (only if the column exists)
     // Commenting out for now as this column may not exist in the tenants table

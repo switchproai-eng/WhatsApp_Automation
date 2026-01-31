@@ -54,20 +54,31 @@ export async function POST(request: Request) {
 
   if (existing) {
     // Update existing agent config
-    await query(
-      `UPDATE ai_agents
-       SET config = $1, updated_at = NOW()
-       WHERE id = $2`,
-      [JSON.stringify(newConfig), existing.id]
-    )
+    // If the profile section is being updated, also update the agent name in the database
+    if (section === 'profile' && data.name) {
+      await query(
+        `UPDATE ai_agents
+         SET config = $1, name = $2, updated_at = NOW()
+         WHERE id = $3`,
+        [JSON.stringify(newConfig), data.name, existing.id]
+      )
+    } else {
+      await query(
+        `UPDATE ai_agents
+         SET config = $1, updated_at = NOW()
+         WHERE id = $2`,
+        [JSON.stringify(newConfig), existing.id]
+      )
+    }
   } else {
     // Create new default agent with the config
-    const agentName = "Default AI Agent";
+    const agentName = section === 'profile' && data.name ? data.name : "Default AI Agent";
     await query(
       `INSERT INTO ai_agents (tenant_id, name, config, is_default, created_at, updated_at)
        VALUES ($1, $2, $3, true, NOW(), NOW())
        ON CONFLICT (tenant_id, is_default) DO UPDATE SET
          config = $3,
+         name = $2,
          updated_at = NOW()`,
       [session.tenantId, agentName, JSON.stringify(newConfig)]
     )
