@@ -33,6 +33,7 @@ import {
   Tag,
   CheckCircle,
   XCircle,
+  Phone,
 } from "lucide-react"
 import { format, formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -50,6 +51,7 @@ interface Contact {
   created_at: string
   conversation_count: string
   total_messages: string
+  agent_phone_numbers: string[]
 }
 
 interface ContactTag {
@@ -150,6 +152,7 @@ export function ContactsTable({ contacts, tags, tenantId }: ContactsTableProps) 
               </TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Phone</TableHead>
+              <TableHead>Agent</TableHead>
               <TableHead>Tags</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last Active</TableHead>
@@ -160,7 +163,7 @@ export function ContactsTable({ contacts, tags, tenantId }: ContactsTableProps) 
           <TableBody>
             {filteredContacts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                   No contacts found
                 </TableCell>
               </TableRow>
@@ -193,6 +196,25 @@ export function ContactsTable({ contacts, tags, tenantId }: ContactsTableProps) 
                     </div>
                   </TableCell>
                   <TableCell className="font-mono text-sm">{contact.phone_number}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {contact.agent_phone_numbers && contact.agent_phone_numbers.length > 0 ? (
+                        contact.agent_phone_numbers.slice(0, 2).map((phone) => (
+                          <Badge key={phone} variant="outline" className="text-xs gap-1 font-mono">
+                            <Phone className="w-3 h-3" />
+                            {phone}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                      {contact.agent_phone_numbers && contact.agent_phone_numbers.length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{contact.agent_phone_numbers.length - 2}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {contact.tags && contact.tags.length > 0 ? (

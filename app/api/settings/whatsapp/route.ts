@@ -26,15 +26,33 @@ export async function GET(request: NextRequest) {
     `;
 
     if (whatsappAccountResult.length === 0) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         connected: false,
-        config: null
+        config: null,
+        accounts: []
       });
     }
 
     const config = whatsappAccountResult[0];
-    
-    return NextResponse.json({ 
+
+    // Return all accounts for the tenant
+    const accounts = whatsappAccountResult.map((account: {
+      id: string;
+      phone_number: string;
+      phone_number_id: string;
+      waba_id: string;
+      display_name: string;
+      status: string;
+    }) => ({
+      id: account.id,
+      phoneNumber: account.phone_number,
+      phoneNumberId: account.phone_number_id,
+      wabaId: account.waba_id,
+      displayName: account.display_name,
+      status: account.status,
+    }));
+
+    return NextResponse.json({
       connected: true,
       config: {
         phoneNumber: config.phone_number,
@@ -43,7 +61,8 @@ export async function GET(request: NextRequest) {
         displayName: config.display_name,
         qualityRating: config.quality_rating,
         status: config.status,
-      }
+      },
+      accounts
     });
   } catch (error) {
     console.error("Error getting WhatsApp settings:", error);

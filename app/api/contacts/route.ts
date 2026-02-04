@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     // Check if contact already exists
     const existing = await query(
-      `SELECT id FROM contacts WHERE tenant_id = $1 AND (phone_number = $2 OR whatsapp_id = $3)`,
+      `SELECT id FROM contacts WHERE tenant_id = $1 AND (phone_number = $2 OR whatsapp_id = $3 OR phone = $2)`,
       [tenant.id, cleanedPhone, whatsappId]
     )
 
@@ -65,11 +65,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // name column is NOT NULL, so provide default if not given
+    const contactName = name || "Unknown"
+
     const [contact] = await query(
-      `INSERT INTO contacts (tenant_id, whatsapp_id, phone_number, name, email, opted_in)
-       VALUES ($1, $2, $3, $4, $5, true)
+      `INSERT INTO contacts (tenant_id, whatsapp_id, phone_number, phone, name, email, opted_in, tags, created_at, updated_at)
+       VALUES ($1, $2, $3, $3, $4, $5, true, '{}', NOW(), NOW())
        RETURNING id, whatsapp_id, phone_number, name, email, avatar_url, tags, opted_in, created_at`,
-      [tenant.id, whatsappId, cleanedPhone, name || null, email || null]
+      [tenant.id, whatsappId, cleanedPhone, contactName, email || null]
     )
 
     return NextResponse.json(contact)

@@ -18,8 +18,9 @@ async function getContactsData(tenantId: string) {
     created_at: string
     conversation_count: string
     total_messages: string
+    agent_phone_numbers: string[]
   }>(
-    `SELECT 
+    `SELECT
       c.id,
       c.whatsapp_id,
       c.phone_number,
@@ -31,16 +32,23 @@ async function getContactsData(tenantId: string) {
       c.last_message_at,
       c.created_at,
       (SELECT COUNT(*)::text FROM conversations WHERE contact_id = c.id) as conversation_count,
-      (SELECT COUNT(*)::text FROM messages m JOIN conversations cv ON m.conversation_id = cv.id WHERE cv.contact_id = c.id) as total_messages
+      (SELECT COUNT(*)::text FROM messages m JOIN conversations cv ON m.conversation_id = cv.id WHERE cv.contact_id = c.id) as total_messages,
+      COALESCE(
+        (SELECT array_agg(DISTINCT wa.phone_number)
+         FROM conversations conv
+         JOIN whatsapp_accounts wa ON wa.id::text = conv.whatsapp_account_id
+         WHERE conv.contact_id = c.id AND wa.phone_number IS NOT NULL),
+        '{}'
+      ) as agent_phone_numbers
      FROM contacts c
      WHERE c.tenant_id = $1
      ORDER BY c.last_message_at DESC NULLS LAST, c.created_at DESC`,
     [tenantId]
   )
 
-  const tags = await query<{ id: string; name: string; color: string }>(
-    `SELECT id, name, color FROM tags WHERE tenant_id = $1 ORDER BY name`,
-    [tenantId]
+  const tags = await query<{ id: string; name: string }>(
+    `SELECT DISTINCT id, name FROM tags ORDER BY name`,
+    []
   )
 
   const stats = {

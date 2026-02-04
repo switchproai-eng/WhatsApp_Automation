@@ -122,7 +122,7 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="text-xl font-semibold mt-6 mb-3">Contact Us</h2>
           <p>
-            If you have any questions or suggestions about our Privacy Policy, do not hesitate to contact us at support@whatsflow.com.
+            If you have any questions or suggestions about our Privacy Policy, do not hesitate to contact us at switchpro.ai@gmail.com.
           </p>
         </CardContent>
       </Card>

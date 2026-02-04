@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Users, UserPlus, Upload, CheckCircle } from "lucide-react"
+import { Users, UserPlus, Upload, CheckCircle, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 interface ContactsHeaderProps {
   stats: {
@@ -31,6 +32,8 @@ export function ContactsHeader({ stats, tenantId }: ContactsHeaderProps) {
   const router = useRouter()
   const [isAddingContact, setIsAddingContact] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Suppress unused variable warning
   void tenantId
@@ -52,12 +55,95 @@ export function ContactsHeader({ stats, tenantId }: ContactsHeaderProps) {
         }),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
+        toast.success("Contact added successfully!")
         setIsAddingContact(false)
         router.refresh()
+      } else {
+        toast.error(data.error || "Failed to add contact")
       }
+    } catch (error) {
+      console.error("Error adding contact:", error)
+      toast.error("Failed to add contact")
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  async function handleImportCSV(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsImporting(true)
+
+    try {
+      const text = await file.text()
+      const lines = text.split("\n").filter(line => line.trim())
+
+      if (lines.length < 2) {
+        toast.error("CSV file is empty or has no data rows")
+        return
+      }
+
+      // Parse header
+      const header = lines[0].toLowerCase().split(",").map(h => h.trim())
+      const phoneIndex = header.findIndex(h => h.includes("phone") || h.includes("number") || h.includes("mobile"))
+      const nameIndex = header.findIndex(h => h.includes("name"))
+      const emailIndex = header.findIndex(h => h.includes("email"))
+
+      if (phoneIndex === -1) {
+        toast.error("CSV must have a column with 'phone', 'number', or 'mobile' in the header")
+        return
+      }
+
+      let successCount = 0
+      let errorCount = 0
+
+      // Process each row
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(",").map(v => v.trim().replace(/^"|"$/g, ""))
+
+        const phoneNumber = values[phoneIndex]
+        if (!phoneNumber) continue
+
+        const name = nameIndex !== -1 ? values[nameIndex] : undefined
+        const email = emailIndex !== -1 ? values[emailIndex] : undefined
+
+        try {
+          const response = await fetch("/api/contacts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phoneNumber, name, email }),
+          })
+
+          if (response.ok) {
+            successCount++
+          } else {
+            errorCount++
+          }
+        } catch {
+          errorCount++
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Imported ${successCount} contacts successfully!`)
+        router.refresh()
+      }
+      if (errorCount > 0) {
+        toast.warning(`${errorCount} contacts failed to import (may already exist)`)
+      }
+    } catch (error) {
+      console.error("Error importing CSV:", error)
+      toast.error("Failed to import CSV file")
+    } finally {
+      setIsImporting(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
     }
   }
 
@@ -93,9 +179,30 @@ export function ContactsHeader({ stats, tenantId }: ContactsHeaderProps) {
           <p className="text-muted-foreground">Manage your WhatsApp contacts and audience</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2 bg-transparent">
-            <Upload className="w-4 h-4" />
-            Import CSV
+          <input
+            type="file"
+            accept=".csv"
+            ref={fileInputRef}
+            onChange={handleImportCSV}
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            className="gap-2 bg-transparent"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isImporting}
+          >
+            {isImporting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Importing...
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" />
+                Import CSV
+              </>
+            )}
           </Button>
           <Dialog open={isAddingContact} onOpenChange={setIsAddingContact}>
             <DialogTrigger asChild>

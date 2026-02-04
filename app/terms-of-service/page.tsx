@@ -140,7 +140,7 @@ export default function TermsOfServicePage() {
 
           <h2 className="text-xl font-semibold mt-6 mb-3">Contact Us</h2>
           <p>
-            If you have any questions about these Terms of Service, please contact us at support@whatsflow.com.
+            If you have any questions about these Terms of Service, please contact us at switchpro.ai@gmail.com.
           </p>
         </CardContent>
       </Card>
