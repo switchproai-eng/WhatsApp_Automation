@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query, queryOne } from "../../../../lib/db";
 import { generateAIResponse, shouldUseAIResponse, checkBusinessHours } from "../../../../lib/ai";
 import { WhatsAppService } from "../../../../lib/whatsapp";
+import { WelcomeMessageService } from "../../../../lib/welcome-message-service";
 
 // Verify webhook (GET request from Meta)
 export async function GET(request: NextRequest) {
@@ -212,6 +213,12 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
         content = `[Unsupported message type: ${message.type}]`;
     }
 
+    // Create WhatsApp service instance
+    const whatsappService = new WhatsAppService({
+      phoneNumberId,
+      accessToken: accountRow.access_token,
+    });
+
     // Store message
     await query(`
       INSERT INTO messages (
@@ -247,6 +254,14 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
     `, [contactId]);
 
     console.log("Message stored successfully:", message.id);
+
+    // Check if this is a new contact and send welcome message if needed
+    try {
+      await WelcomeMessageService.processIncomingMessage(senderPhone, tenantId, whatsappService);
+    } catch (welcomeError) {
+      console.error("Error sending welcome message:", welcomeError);
+      // Continue processing even if welcome message fails
+    }
 
     // Check if we should auto-respond with AI
     try {
@@ -350,12 +365,6 @@ async function handleIncomingMessage(payload: IncomingMessagePayload) {
 
         // Generate AI response
         const aiResponse = await generateAIResponse(content, conversationHistory, agentConfig || {});
-
-        // Send response via WhatsApp
-        const whatsappService = new WhatsAppService({
-          phoneNumberId,
-          accessToken: accountRow.access_token,
-        });
 
         await whatsappService.sendTextMessage({
           to: senderPhone,
