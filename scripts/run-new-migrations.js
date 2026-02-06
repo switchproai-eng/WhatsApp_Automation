@@ -15,9 +15,9 @@ async function runNewMigrations() {
   const sql = neon(process.env.DATABASE_URL);
 
   const migrationFiles = [
-    './scripts/015-create-whatsapp-accounts-table.sql',
     './scripts/013-fix-contacts-table-columns.sql',
-    './scripts/014-create-message-templates-table.sql'
+    './scripts/014-create-message-templates-table.sql',
+    './scripts/016-create-business-templates-table.sql'
   ];
 
   for (const migrationFile of migrationFiles) {
